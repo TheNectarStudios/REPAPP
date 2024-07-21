@@ -23,13 +23,14 @@ const App = () => {
   const handleRegister = async () => {
     try {
       console.log('Starting registration process...');
-      const response = await fetch('http://192.168.134.91:3000/user/register', {
+      const response = await fetch('http://192.168.0.102:3000/user/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, phoneNumber, password, role }),
+        body: JSON.stringify({ username, phoneNumber, password, }),
       });
+      setRole("User") ;
   
       console.log('Received response from server:', response.status);
   
@@ -50,7 +51,7 @@ const App = () => {
   let [user123, serUser123] = ""; 
   const handleGettingRole = async ()=>{
     try {
-      const response = await fetch('http://192.168.134.91:3000/user/getuser', {
+      const response = await fetch('http://192.168.0.102:3000/user/getuser', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,10 +64,6 @@ const App = () => {
       }
     
       const data = await response.json();
-      
-      // Assuming data.userRole contains the role
-      // Alert.alert(`User role: ${data.userRole}`);
-      // console.log(data.userRole);
       setRole(data.userRole);
     } catch (error) {
       // console.error('Error:', error);
@@ -77,7 +74,7 @@ const App = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.134.91:3000/user/login', {
+      const response = await fetch('http://192.168.0.102:3000/user/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,8 +87,8 @@ const App = () => {
       }
   
       const data = await response.json();
-      setToken(data.token); // Save token to state (not storing in AsyncStorage in this example)
-      setScreen('home'); // Move to home screen after successful login
+      setToken(data.token); 
+      setScreen('home'); 
       Alert.alert('Login successful', 'Welcome!');
     } catch (error) {
       console.error('Error during login:', error);
@@ -102,7 +99,7 @@ const App = () => {
 
   const handleVerifyOTP = async () => {
     try {
-      const response = await fetch('http://192.168.134.91:3000/user/verify', {
+      const response = await fetch('http://192.168.0.102:3000/user/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,12 +132,12 @@ const App = () => {
           <View style={styles.container}>
             
             <Text style={styles.header}>Register</Text>
-            <TextInput
+            {/* <TextInput
               style={styles.input}
               placeholder="Role"
               value={role}
               onChangeText={setRole}
-            />
+            /> */}
             <TextInput
               style={styles.input}
               placeholder="Username"

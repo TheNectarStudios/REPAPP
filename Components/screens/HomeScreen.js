@@ -1,48 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView } from 'react-native';
+import axios from 'axios';
 
 const HomeScreen = () => {
   const [location, setLocation] = useState('Pune');
   const [searchQuery, setSearchQuery] = useState('');
+  const [houses, setHouses] = useState([]);
 
-  const houses = [
-    {
-      id: '1',
-      name: 'Dreamsville House',
-      distance: '1.8 km',
-      address: 'Jl. Sultan Iskandar Muda',
-      price: 'Rp. 2.500',
-      bedrooms: 6,
-      bathrooms: 4,
-    },
-    {
-      id: '2',
-      name: 'Ascot House',
-      distance: '2.5 km',
-      address: 'Jl. Cilandak',
-      price: 'Rp. 3.000',
-      bedrooms: 5,
-      bathrooms: 3,
-    },
-    {
-      id: '3',
-      name: 'Orchad House',
-      distance: '3.2 km',
-      address: 'Jl. Sudirman',
-      price: 'Rp. 2.500',
-      bedrooms: 6,
-      bathrooms: 4,
-    },
-    {
-      id: '4',
-      name: 'The Hollies House',
-      distance: '1.1 km',
-      address: 'Jl. Gatot Subroto',
-      price: 'Rp. 2.500',
-      bedrooms: 5,
-      bathrooms: 2,
-    },
-  ];
+  useEffect(() => {
+    fetchHouses();
+  }, []);
+
+  const fetchHouses = async () => {
+    try {
+      const response = await axios.get('http://your-server-ip:3000/user/child-property');
+      setHouses(response.data);
+    } catch (error) {
+      console.error('Error fetching houses:', error);
+    }
+  };
 
   const handleSearch = () => {
     // Implement search logic here
@@ -103,7 +79,7 @@ const HomeScreen = () => {
       <FlatList
         data={houses}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         horizontal
         showsHorizontalScrollIndicator={false}
       />
@@ -111,7 +87,7 @@ const HomeScreen = () => {
       <FlatList
         data={houses}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
       />
     </ScrollView>

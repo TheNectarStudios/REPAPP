@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import Navbar from './Components/Navbar';
+import RNFS from 'react-native-fs';
 
 const App = () => {
   const [screen, setScreen] = useState('register'); // Possible values: 'register', 'login', 'verifyOTP', 'home'
@@ -75,6 +76,18 @@ const App = () => {
     
   }
 
+  const saveUsername = async (username) => {
+    const path = RNFS.DocumentDirectoryPath + '/user.json';
+  
+    try {
+      const user = { username };
+      await RNFS.writeFile(path, JSON.stringify(user), 'utf8');
+      console.log('Username saved to file:', path);
+    } catch (e) {
+      console.error('Failed to save username to file:', e);
+    }
+  };
+  
   const handleLogin = async () => {
     try {
       const response = await fetch('http://192.168.134.91:3000/user/login', {
@@ -91,15 +104,15 @@ const App = () => {
   
       const data = await response.json();
       setToken(data.token); // Save token to state (not storing in AsyncStorage in this example)
+      await saveUsername(username); // Save the username to the JSON file
       setScreen('home'); // Move to home screen after successful login
       Alert.alert('Login successful', 'Welcome!');
     } catch (error) {
       console.error('Error during login:', error);
       Alert.alert('Login failed', 'An error occurred during login');
     }
-    handleGettingRole() ; 
+    handleGettingRole(); 
   };
-
   const handleVerifyOTP = async () => {
     try {
       const response = await fetch('http://192.168.134.91:3000/user/verify', {

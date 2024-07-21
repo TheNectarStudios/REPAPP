@@ -187,14 +187,16 @@ const Navbar = ({ username, userRole }) => {
           default:
             return <HomeScreen />;
         }
-      case 'Creator':
-        switch (currentScreen) {
-          case 'CreatorHome':
-            return <CreatorHomeScreen onNavigate={() => navigateTo('Creator')} />;
-          case 'Creator':
-            return <CreatorScreen onBack={() => navigateTo('CreatorHome')} />;
-          default:
-            return <CreatorHomeScreen onNavigate={() => navigateTo('Creator')} />;
+        case 'Creator':
+          switch (currentScreen) {
+            case 'CreatorHome':
+              return <CreatorHomeScreen onNavigate={() => navigateTo('Creator')} Username={username} />;
+            case 'Creator':
+              return <CreatorScreen onBack={() => navigateTo('CreatorHome')} />;
+            default:
+              return <CreatorHomeScreen onNavigate={() => navigateTo('Creator')} Username={username} />;
+          
+        
         }
       default:
         return <HomeScreen />;

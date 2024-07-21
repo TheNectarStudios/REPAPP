@@ -19,6 +19,7 @@
     "react-native": "^0.74.2",
     "react-native-aws3": "^0.0.9",
     "react-native-dotenv": "^3.4.11",
+    "react-native-fs": "^2.20.0",
     "react-native-picker-select": "^9.1.3",
     "react-native-vector-icons": "^10.1.0"
   },

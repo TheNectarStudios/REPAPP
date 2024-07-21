@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Button, TextInput, ScrollVie
 import AWS from 'aws-sdk';
 import { Buffer } from 'buffer';
 
+
 const CreatorScreen = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -13,9 +14,9 @@ const CreatorScreen = ({ onBack }) => {
 
   // AWS S3 Configuration
   AWS.config.update({
-    accessKeyId: AWS_ACCESS_KEY_ID,
-    secretAccessKey: AWS_SECRET_ACCESS_KEY,
-    region: AWS_REGION
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Replace with your access key ID
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // Replace with your secret access key
+    region: process.env.AWS_REGION // Replace with your AWS region
   });
 
   const s3 = new AWS.S3();

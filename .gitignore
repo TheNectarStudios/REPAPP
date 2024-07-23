@@ -2,7 +2,7 @@
 #
 .DS_Store
 .env
-
+awsConfig.js
 # Xcode
 #
 build/

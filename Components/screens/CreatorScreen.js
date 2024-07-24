@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button } from 'react-native';
+import RNFS from 'react-native-fs';
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
-import DescriptionPage from './DescriptionPage'; // Import DescriptionPage
 
 const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
   if (!organisationName || !parentPropertyName || !childPropertyName) {
@@ -17,9 +17,9 @@ const fetchImageFromS3 = async (organisationName, parentPropertyName, childPrope
     const params = {
       Bucket: 'ignitens',
       Key: key,
-      Expires: 60, // URL expiration time in seconds
+      Expires: 30, // URL expiration time in seconds
     };
-    const imageUrl = s3.getSignedUrl('getObject', params);
+    const imageUrl = await s3.getSignedUrlPromise('getObject', params);
     console.log('Generated Image URL:', imageUrl); // Log the generated URL
     return imageUrl;
   } catch (error) {
@@ -28,194 +28,142 @@ const fetchImageFromS3 = async (organisationName, parentPropertyName, childPrope
   }
 };
 
-const HomeScreen = () => {
-  const [location, setLocation] = useState('Pune');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [houses, setHouses] = useState([]);
-  const [selectedProperty, setSelectedProperty] = useState(null);
+const CreatorScreen = ({ navigateTo }) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [propertyData, setPropertyData] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
 
-  useEffect(() => {
-    fetchHouses();
-  }, []);
-
-  const fetchHouses = async () => {
+  const fetchPropertyData = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get('http://192.168.0.102:3000/childproperty/child-properties');
-      const housesWithImages = await Promise.all(response.data.map(async (property) => {
-        const imageUrl = await fetchImageFromS3(property.OrganisationName, property.ParentPropertyName, property.ChildPropertyName);
-        return { ...property, imageUrl };
-      }));
-      setHouses(housesWithImages);
+      const path = RNFS.DocumentDirectoryPath + '/selectedChildProperty.json';
+      const fileExists = await RNFS.exists(path);
+      if (fileExists) {
+        const fileContents = await RNFS.readFile(path, 'utf8');
+        const { propertyName } = JSON.parse(fileContents);
+
+        const response = await axios.get(`http://192.168.134.91:3000/childproperty/child-property/${propertyName}`);
+        if (response.status === 200) {
+          const data = response.data;
+          setPropertyData(data);
+
+          // Fetch the image using the fetched property data
+          const imageUrl = await fetchImageFromS3(data.OrganisationName, data.ParentPropertyName, data.ChildPropertyName);
+          setImageUrl(imageUrl);
+        } else {
+          const errorText = await response.text();
+          setMessage(`Error: ${errorText}`);
+        }
+      } else {
+        setMessage('Selected child property file does not exist.');
+      }
     } catch (error) {
-      console.error('Error fetching houses:', error);
+      setMessage('Error fetching property data: ' + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    // Implement search logic here
-  };
-
-  const handleReadMore = (property) => {
-    setSelectedProperty(property);
-  };
-
-  const renderItem = ({ item }) => {
-    console.log('Rendering item with image URL:', item.imageUrl); // Debugging line
-    return (
-      <TouchableOpacity style={styles.card} onPress={() => handleReadMore(item)}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        <View style={styles.cardContent}>
-          <Text style={styles.propertyName}>{item.ChildPropertyName}</Text>
-          <Text style={styles.propertyPrice}>{item.Price}</Text>
-          <Text style={styles.propertyDetail}>Area: {item.Area}</Text>
-          <View style={styles.propertyStats}>
-            <Text style={styles.stat}>Bath: {item.Bath}</Text>
-            <Text style={styles.stat}>Bed: {item.Bedroom}</Text>
-            <Text style={styles.stat}>Room: {item.Room}</Text>
-          </View>
-          <TouchableOpacity style={styles.readMoreButton} onPress={() => handleReadMore(item)}>
-            <Text style={styles.readMoreText}>Read More</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  if (selectedProperty) {
-    return (
-      <DescriptionPage property={selectedProperty} setSelectedProperty={setSelectedProperty} />
-    );
-  }
+  useEffect(() => {
+    fetchPropertyData();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.locationText}>{location}</Text>
-        <TouchableOpacity style={styles.notificationIcon}>
-          <Text>Notification</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search address, or near you"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Search</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={houses}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.ChildPropertyName}
-        contentContainerStyle={styles.cardContainer}
-      />
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.text}>Creator Screen</Text>
+      {loading && <ActivityIndicator size="large" color="#ffffff" />}
+      {message ? <Text style={styles.text}>{message}</Text> : null}
+
+      {propertyData && (
+        <View style={styles.card}>
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.cardImage} />
+          ) : (
+            <View style={styles.cardImagePlaceholder}>
+              <Text style={styles.cardImagePlaceholderText}>No Image Available</Text>
+            </View>
+          )}
+          <View style={styles.cardContent}>
+            <Text style={styles.cardSubtitle}>{propertyData.OrganisationName}</Text>
+            <Text style={styles.cardTitle}>{propertyData.ChildPropertyName}</Text>
+            <View style={styles.cardDetails}>
+              <Text style={styles.cardDetail}>{propertyData.Room} Rooms</Text>
+              <Text style={styles.cardDetail}>{propertyData.Bedroom} Bed</Text>
+              <Text style={styles.cardDetail}>{propertyData.Bath} Bath</Text>
+              <Text style={styles.cardDetail}>{propertyData.Area}</Text>
+            </View>
+            <Text style={styles.cardPrice}>{propertyData.Price}</Text>
+            <Button title="Read More" onPress={() => navigateTo('Description', propertyData.ChildPropertyName)} />
+          </View>
+        </View>
+      )}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexGrow: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    padding: 20,
   },
-  locationText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  notificationIcon: {
-    // Add styles for notification icon if needed
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-  },
-  searchButton: {
-    marginLeft: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#007BFF',
-    borderRadius: 5,
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  cardContainer: {
-    paddingBottom: 20,
+  text: {
+    color: 'white',
+    margin: 10,
   },
   card: {
-    backgroundColor: '#fff',
+    width: '90%',
+    backgroundColor: 'white',
     borderRadius: 10,
+    marginBottom: 20,
     overflow: 'hidden',
-    marginBottom: 10,
-    elevation: 3, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
   },
-  image: {
+  cardImage: {
     width: '100%',
     height: 200,
   },
-  cardContent: {
-    padding: 10,
+  cardImagePlaceholder: {
+    width: '100%',
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'gray',
   },
-  propertyName: {
+  cardImagePlaceholderText: {
+    color: 'white',
     fontSize: 16,
+  },
+  cardContent: {
+    padding: 15,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: 'gray',
+    marginBottom: 5,
+  },
+  cardTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 10,
   },
-  propertyPrice: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 5,
-  },
-  propertyDetail: {
-    fontSize: 14,
-    color: '#888',
-  },
-  propertyStats: {
+  cardDetails: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    flexWrap: 'wrap',
+    marginBottom: 10,
   },
-  stat: {
-    fontSize: 12,
-    color: '#888',
+  cardDetail: {
+    width: '50%',
+    fontSize: 16,
+    color: 'gray',
   },
-  readMoreButton: {
-    marginTop: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#007BFF',
-    borderRadius: 5,
-  },
-  readMoreText: {
-    color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
+  cardPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 });
 
-export default HomeScreen;
+export default CreatorScreen;

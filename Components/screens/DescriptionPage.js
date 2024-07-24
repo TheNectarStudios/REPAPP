@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView,Alert } from 'react-native';
 import DatePicker from './DatePicker';
+import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DescriptionPage = ({ property, setSelectedProperty }) => {
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
   const [bookingMessage, setBookingMessage] = useState('');
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    // Fetch username from AsyncStorage
+    const fetchUsername = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (storedUsername) {
+          setUsername(storedUsername);
+        }
+      } catch (error) {
+        console.error('Failed to fetch username:', error);
+      }
+    };
+    fetchUsername();
+  }, []);
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
   };
 
   const handleBooking = async () => {
-    if (!selectedDate) {
-      setBookingMessage('Please select a date');
+    if (!selectedDate || !selectedTime) {
+      setBookingMessage('Please select a date and time');
       return;
     }
 
     try {
-      console.log('Booking property with ID:', property.id);
 
       const response = await fetch('http://192.168.0.102:3000/slots/booking', {
         method: 'POST',
@@ -25,9 +43,12 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          propertyId: '232',
-          userId: 'USER_ID_PLACEHOLDER', // Replace with actual user ID
-          date: selectedDate.toISOString(),
+          propertyName: property.ChildPropertyName,
+          parentPropertyName: property.ParentPropertyName,
+          date: selectedDate.toISOString().split('T')[0], // Just the date part
+          time: selectedTime,
+          username,
+          organisationName: property.OrganisationName,
         }),
       });
 
@@ -63,7 +84,18 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
         onDateChange={handleDateChange}
       />
 
-      {selectedDate && (
+      <Picker
+        selectedValue={selectedTime}
+        onValueChange={(itemValue) => setSelectedTime(itemValue)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Select Time" value={null} />
+        {[...Array(24).keys()].map((hour) => (
+          <Picker.Item key={hour} label={`${hour}:00`} value={`${hour}:00`} />
+        ))}
+      </Picker>
+
+      {selectedDate && selectedTime && (
         <TouchableOpacity style={styles.bookButton} onPress={handleBooking}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
@@ -116,6 +148,11 @@ const styles = StyleSheet.create({
   stat: {
     fontSize: 14,
     color: '#888',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    marginTop: 20,
   },
   bookButton: {
     marginTop: 20,

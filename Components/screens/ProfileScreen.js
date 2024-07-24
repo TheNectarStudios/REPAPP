@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Modal from 'react-native-modal';
@@ -87,6 +87,10 @@ const ProfilePage = () => {
     }
   };
 
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
   const handleDelete = (booking) => {
     Alert.alert(
       'Delete Booking',
@@ -160,9 +164,14 @@ const ProfilePage = () => {
               <Picker.Item key={hour} label={`${hour}:00`} value={`${hour}:00`} />
             ))}
           </Picker>
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
+          <View style={styles.modalButtonContainer}>
+            <TouchableOpacity style={styles.button} onPress={handleSave}>
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
           {bookingMessage ? <Text style={styles.bookingMessage}>{bookingMessage}</Text> : null}
         </View>
       </Modal>
@@ -222,9 +231,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     alignItems: 'center',
+    elevation: 2,
   },
   deleteButton: {
     backgroundColor: '#dc3545',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
   },
   buttonText: {
     color: '#fff',
@@ -266,6 +279,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     textAlign: 'center',
+    marginTop: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
 });

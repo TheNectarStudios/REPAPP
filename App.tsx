@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import Navbar from './Components/Navbar';
 import RNFS from 'react-native-fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const App = () => {
   const [screen, setScreen] = useState('register'); // Possible values: 'register', 'login', 'verifyOTP', 'home'
@@ -100,17 +102,21 @@ const App = () => {
       }
   
       const data = await response.json();
-
-      setToken(data.token); 
+      
+      // Save token and username to AsyncStorage
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('username', username);
+  
       setScreen('home'); 
-
       Alert.alert('Login successful', 'Welcome!');
+      
+      handleGettingRole(); 
     } catch (error) {
       console.error('Error during login:', error);
       Alert.alert('Login failed', 'An error occurred during login');
     }
-    handleGettingRole(); 
   };
+  
   const handleVerifyOTP = async () => {
     try {
       const response = await fetch('http://192.168.0.102:3000/user/verify', {
@@ -121,9 +127,13 @@ const App = () => {
         body: JSON.stringify({ phoneNumber, verificationCode }),
       });
       console.log(verificationCode);
-
+  
       if (response.status === 200) {
         Alert.alert('OTP verified', 'Phone number verified successfully');
+        
+        // Save phone number to AsyncStorage if needed
+        await AsyncStorage.setItem('phoneNumber', phoneNumber);
+  
         setScreen('home'); // Move to home screen after OTP verification
       } else {
         Alert.alert('OTP verification failed', 'Invalid OTP entered');
@@ -133,7 +143,6 @@ const App = () => {
       Alert.alert('OTP verification failed', 'An error occurred during OTP verification');
     }
   };
-
   const handleLogout = () => {
     setToken(null); // Clear token from state
     setScreen('login'); // Move to login screen after logout

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button } 
 import RNFS from 'react-native-fs';
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
+import DescriptionCreator from './DescriptionCreator'; // Adjust the path as necessary
 
 const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
   if (!organisationName || !parentPropertyName || !childPropertyName) {
@@ -33,6 +34,8 @@ const CreatorScreen = ({ navigateTo }) => {
   const [message, setMessage] = useState('');
   const [propertyData, setPropertyData] = useState(null);
   const [imageUrl, setImageUrl] = useState('');
+  const [showDescription, setShowDescription] = useState(false);
+  const [selectedPropertyName, setSelectedPropertyName] = useState('');
 
   const fetchPropertyData = async () => {
     setLoading(true);
@@ -47,6 +50,7 @@ const CreatorScreen = ({ navigateTo }) => {
         if (response.status === 200) {
           const data = response.data;
           setPropertyData(data);
+          setSelectedPropertyName(data.ChildPropertyName);
 
           // Fetch the image using the fetched property data
           const imageUrl = await fetchImageFromS3(data.OrganisationName, data.ParentPropertyName, data.ChildPropertyName);
@@ -68,6 +72,10 @@ const CreatorScreen = ({ navigateTo }) => {
   useEffect(() => {
     fetchPropertyData();
   }, []);
+
+  if (showDescription) {
+    return <DescriptionCreator propertyName={selectedPropertyName} navigateBack={() => setShowDescription(false)} />;
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -94,7 +102,7 @@ const CreatorScreen = ({ navigateTo }) => {
               <Text style={styles.cardDetail}>{propertyData.Area}</Text>
             </View>
             <Text style={styles.cardPrice}>{propertyData.Price}</Text>
-            <Button title="Read More" onPress={() => navigateTo('Description', propertyData.ChildPropertyName)} />
+            <Button title="Read More" onPress={() => setShowDescription(true)} />
           </View>
         </View>
       )}
@@ -118,22 +126,23 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: 'white',
     borderRadius: 10,
-    marginBottom: 20,
     overflow: 'hidden',
+    marginBottom: 20,
   },
   cardImage: {
     width: '100%',
     height: 200,
+    resizeMode: 'cover',
   },
   cardImagePlaceholder: {
     width: '100%',
     height: 200,
+    backgroundColor: '#ccc',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'gray',
   },
   cardImagePlaceholderText: {
-    color: 'white',
+    color: '#888',
     fontSize: 16,
   },
   cardContent: {
@@ -141,28 +150,27 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 14,
-    color: 'gray',
-    marginBottom: 5,
+    color: '#888',
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginVertical: 5,
   },
   cardDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 10,
+    marginVertical: 5,
   },
   cardDetail: {
-    width: '50%',
-    fontSize: 16,
-    color: 'gray',
+    fontSize: 14,
+    color: '#888',
+    marginRight: 10,
   },
   cardPrice: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginVertical: 5,
   },
 });
 

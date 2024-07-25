@@ -198,12 +198,11 @@
 // });
 
 // export default DescriptionCreator;
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Button } from 'react-native';
 import DatePicker from './DateTimePicker';  // Adjust the path as necessary
 
-const DescriptionCreator = ({ propertyName }) => {
+const DescriptionCreator = ({ propertyName, navigateBack }) => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [propertyData, setPropertyData] = useState(null);
@@ -263,13 +262,13 @@ const DescriptionCreator = ({ propertyName }) => {
           <View style={styles.bookingContainer}>
             <DatePicker dates={selectedDates} onAddDate={handleAddDate} onConfirm={handleConfirm} />
           </View>
+          <Button title="Back" onPress={navigateBack} />
         </>
       )}
       {message ? <Text>{message}</Text> : null}
     </ScrollView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

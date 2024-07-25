@@ -231,7 +231,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const path = RNFS.DocumentDirectoryPath + '/user.json';
+      const path = `${RNFS.DocumentDirectoryPath}/user.json`;
 
       try {
         const fileExists = await RNFS.exists(path);
@@ -308,8 +308,8 @@ const CreatorHomeScreen = ({ onNavigate }) => {
   }, [organizationName]);
 
   const handleParentPropertyPress = async (propertyName) => {
-    const propertyPath = RNFS.DocumentDirectoryPath + '/selectedProperty.json';
-    const orgPath = RNFS.DocumentDirectoryPath + '/selectedOrganization.json';
+    const propertyPath = `${RNFS.DocumentDirectoryPath}/selectedProperty.json`;
+    const orgPath = `${RNFS.DocumentDirectoryPath}/selectedOrganization.json`;
     try {
       // Save both propertyName and organizationName
       await Promise.all([
@@ -326,7 +326,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
     console.log('Navigating to SlotsApproval with organizationName:', organizationName);
     onNavigate('SlotsApproval', { organizationName });
   };
-  
+
   const renderItem = ({ item }) => (
     <View style={styles.buttonContainer}>
       <Button

@@ -25,7 +25,8 @@
     "react-native-fs": "^2.20.0",
     "react-native-modal": "^13.0.1",
     "react-native-picker-select": "^9.1.3",
-    "react-native-vector-icons": "^10.1.0"
+    "react-native-vector-icons": "^10.1.0",
+    "react-native-webview": "^13.10.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

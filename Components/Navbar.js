@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import RNFS from 'react-native-fs';
 // import React, { useState } from 'react';
 // import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 // import HomeScreen from './screens/HomeScreen';
@@ -137,19 +140,20 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, TouchableWithoutFeedback, BackHandler } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import CreatorScreen from './screens/CreatorScreen'; 
+import CreatorScreen from './screens/CreatorScreen';
 import CreatorHomeScreen from './screens/CreatorHomeScreen';
 import NearbyScreen from './screens/NearbyScreen';
-// import BookmarkScreen from './screens/BookmarkScreen'; // Import the BookmarkScreen component
-// import NotificationScreen from './screens/NotificationScreen'; // Import the NotificationScreen component
-// import MessageScreen from './screens/MessageScreen'; // Import the MessageScreen component
-// import SettingScreen from './screens/SettingScreen'; // Import the SettingScreen component
-// import HelpScreen from './screens/HelpScreen'; // Import the HelpScreen component
-// import LogoutScreen from './screens/LogoutScreen'; // Import the LogoutScreen component
+import ParentPropertyList from './screens/ParentPropertyList';
+import DescriptionScreen from './screens/DescriptionCreator';
+import SlotsApproval from './screens/SlotsApproval';
+
+// Import other screens as needed
 
 const Navbar = ({ username, userRole }) => {
   const [isSidebarVisible, setSidebarVisible] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('Home');
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [organizationName, setOrganizationName] = useState(null);
 
   useEffect(() => {
     const backAction = () => {
@@ -169,8 +173,29 @@ const Navbar = ({ username, userRole }) => {
     setSidebarVisible(!isSidebarVisible);
   };
 
-  const navigateTo = (screen) => {
+  const navigateTo = async (screen, params) => {
     setSidebarVisible(false);
+
+    if (screen === 'CreatorScreen' || screen === 'Description') {
+      setSelectedProperty(params?.propertyName || null);
+    }
+    if (screen === 'SlotsApproval') {
+      setOrganizationName(params?.organizationName || null);
+    }
+    
+    // Save propertyName and organizationName to files if needed
+    if (screen === 'CreatorHome') {
+      try {
+        await Promise.all([
+          RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedProperty.json', JSON.stringify({ propertyName: selectedProperty }), 'utf8'),
+          RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedOrganization.json', JSON.stringify({ organizationName: organizationName }), 'utf8')
+        ]);
+      } catch (e) {
+        console.error('Failed to save data:', e);
+        Alert.alert('Error', 'Failed to save data.');
+      }
+    }
+
     setCurrentScreen(screen);
   };
 
@@ -182,6 +207,9 @@ const Navbar = ({ username, userRole }) => {
             return <HomeScreen />;
           case 'Profile':
             return <ProfileScreen />;
+          // case 'Nearby':
+          //   return <NearbyScreen />;
+          // Uncomment and add other screens as needed
           // case 'Nearby':
           //   return <NearbyScreen />;
           // case 'Bookmark':
@@ -199,6 +227,20 @@ const Navbar = ({ username, userRole }) => {
           default:
             return <HomeScreen />;
         }
+      case 'Creator':
+        switch (currentScreen) {
+          case 'CreatorHome':
+            return <CreatorHomeScreen onNavigate={navigateTo} />;
+          case 'ParentPropertyList':
+            return <ParentPropertyList navigateTo={navigateTo} />;
+          case 'CreatorScreen':
+            return <CreatorScreen propertyName={selectedProperty} navigateTo={navigateTo} />;
+          case 'Description':
+            return <DescriptionScreen propertyName={selectedProperty} />;
+          case 'SlotsApproval':
+            return <SlotsApproval organizationName={organizationName} />;
+          default:
+            return <CreatorHomeScreen onNavigate={navigateTo} />;
       case 'Creator':
         switch (currentScreen) {
           case 'CreatorHome':
@@ -248,6 +290,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: '#F5FCFF',
+  },
+  backButton: {
+    color: '#fff',
+    fontSize: 20,
+    fontFamily: 'Roboto',
+    marginBottom: 10,
   },
   sidebar: {
     position: 'absolute',

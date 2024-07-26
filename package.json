@@ -24,6 +24,7 @@
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",
     "react-native-modal": "^13.0.1",
+    "react-native-modal-datetime-picker": "^17.1.0",
     "react-native-picker-select": "^9.1.3",
     "react-native-vector-icons": "^10.1.0",
     "react-native-webview": "^13.10.5"

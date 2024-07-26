@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } 
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
 import DescriptionPage from './DescriptionPage'; // Import DescriptionPage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
   if (!organisationName || !parentPropertyName || !childPropertyName) {
@@ -29,11 +30,11 @@ const fetchImageFromS3 = async (organisationName, parentPropertyName, childPrope
 };
 
 const HomeScreen = () => {
-  const [location, setLocation] = useState('Pune');
   const [searchQuery, setSearchQuery] = useState('');
   const [houses, setHouses] = useState([]);
   const [filteredHouses, setFilteredHouses] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [cities, setCities] = useState([]);
 
   useEffect(() => {
     fetchHouses();
@@ -52,32 +53,29 @@ const HomeScreen = () => {
       }));
       setHouses(housesWithImages);
       setFilteredHouses(housesWithImages); // Initialize filteredHouses with all houses
+
+      // Extract unique cities from the houses data
+      const uniqueCities = [...new Set(housesWithImages.map(house => house.Location))];
+      setCities(uniqueCities);
     } catch (error) {
       console.error('Error fetching houses:', error);
     }
   };
 
-  const handleSearch = () => {
-    filterHouses();
-  };
-
   const filterHouses = () => {
     const query = searchQuery.toLowerCase();
-
-    // Filter houses with a fallback for undefined fields
     const filtered = houses.filter((house) => {
       const childPropertyName = house.ChildPropertyName?.toLowerCase() || '';
-      const description = house.Description?.toLowerCase() || '';
-      const area = house.Area?.toLowerCase() || '';
-
-      return (
-        childPropertyName.includes(query) ||
-        description.includes(query) ||
-        area.includes(query)
-      );
+      const parentPropertyName = house.ParentPropertyName?.toLowerCase() || '';
+      const location = house.Location?.toLowerCase() || '';
+      return childPropertyName.includes(query) || parentPropertyName.includes(query) || location.includes(query);
     });
 
     setFilteredHouses(filtered);
+  };
+
+  const handleSearch = () => {
+    filterHouses();
   };
 
   const handleReadMore = (property) => {
@@ -118,7 +116,7 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.locationText}>{location}</Text>
+        <Text style={styles.locationText}>{searchQuery}</Text>
         <TouchableOpacity style={styles.notificationIcon}>
           <Text>Notification</Text>
         </TouchableOpacity>
@@ -126,7 +124,7 @@ const HomeScreen = () => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search address, or near you"
+          placeholder="Search by property name, location..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -154,7 +152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20, // Increased margin to avoid overlap
     marginBottom: 20,
   },
   locationText: {

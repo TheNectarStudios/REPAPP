@@ -40,7 +40,7 @@
 
 //     const fetchOrganisationName = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.11.144:3000/user/getuserorganisation/${username}`);
+//         const response = await fetch(`http://192.168.0.102:3000/user/getuserorganisation/${username}`);
 
 //         if (response.status === 200) {
 //           const data = await response.json();
@@ -65,7 +65,7 @@
 
 //     const fetchOrganisationData = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.11.144:3000/organisation/organisation/${organizationName}`);
+//         const response = await fetch(`http://192.168.0.102:3000/organisation/organisation/${organizationName}`);
 
 //         if (response.status === 200) {
 //           const data = await response.json();
@@ -163,9 +163,8 @@
 //   },
 // });
 
-// export default CreatorHomeScreen;
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Button, FlatList, ActivityIndicator, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 
@@ -182,14 +181,11 @@ const CreatorHomeScreen = ({ onNavigate }) => {
         const storedUsername = await AsyncStorage.getItem('username');
         if (storedUsername) {
           setUsername(storedUsername);
-          console.log('Username fetched from AsyncStorage:', storedUsername);
         } else {
-          console.log('Username not found in AsyncStorage.');
           setMessage('Username not found in AsyncStorage.');
           setLoading(false);
         }
       } catch (e) {
-        console.error('Failed to fetch username from AsyncStorage:', e);
         setMessage('Failed to fetch username from AsyncStorage: ' + e.message);
         setLoading(false);
       }
@@ -205,12 +201,11 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationName = async () => {
       try {
-        const response = await fetch(`http://192.168.11.144:3000/user/getuserorganisation/${username}`);
+        const response = await fetch(`http://192.168.0.102:3000/user/getuserorganisation/${username}`);
 
         if (response.status === 200) {
           const data = await response.json();
           setOrganizationName(data.organisationName);
-          // Alert.alert('Fetched organisation data:', JSON.stringify(data));
         } else {
           const errorText = await response.text();
           setMessage(`Error: ${errorText}`);
@@ -230,12 +225,11 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationData = async () => {
       try {
-        const response = await fetch(`http://192.168.11.144:3000/organisation/organisation/${organizationName}`);
+        const response = await fetch(`http://192.168.0.102:3000/organisation/organisation/${organizationName}`);
 
         if (response.status === 200) {
           const data = await response.json();
           setOrganizationData(data);
-          // Alert.alert('Fetched organisation data:', JSON.stringify(data));
         } else {
           const errorText = await response.text();
           setMessage(`Error: ${errorText}`);
@@ -252,21 +246,18 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
   const handleParentPropertyPress = async (propertyName) => {
     try {
-      // Save both propertyName and organizationName using AsyncStorage
       await Promise.all([
-        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedProperty.json', JSON.stringify({ propertyName: propertyName }), 'utf8'),
-        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedOrganization.json', JSON.stringify({ organizationName: organizationName }), 'utf8')
+        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedProperty.json', JSON.stringify({ propertyName }), 'utf8'),
+        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedOrganization.json', JSON.stringify({ organizationName }), 'utf8')
       ]);
-      onNavigate('ParentPropertyList'); // Call onNavigate to switch screen
+      onNavigate('ParentPropertyList');
     } catch (e) {
-      console.error('Failed to save data:', e);
-      // Alert.alert('Error', 'Failed to save data.');
+      setMessage('Failed to save data: ' + e.message);
     }
   };
 
   const handleSlotsPress = () => {
-    console.log('Navigating to SlotsApproval with organizationName:', organizationName);
-    onNavigate('SlotsApproval', { organizationName }); // Call onNavigate to switch screen
+    onNavigate('SlotsApproval', { organizationName });
   };
 
   const renderItem = ({ item }) => (
@@ -281,7 +272,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#00ff00" />
       </View>
     );
@@ -290,14 +281,14 @@ const CreatorHomeScreen = ({ onNavigate }) => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.block}>
-        <Text style={styles.text}>Organization: {organizationName}</Text>
+        <Text style={styles.title}>Organization: {organizationName}</Text>
       </View>
       <View style={styles.block}>
         <Button title="Slots" onPress={handleSlotsPress} color="#007BFF" />
       </View>
       <View style={styles.block}>
         {message ? (
-          <Text style={styles.text}>{message}</Text>
+          <Text style={styles.message}>{message}</Text>
         ) : (
           <FlatList
             data={organizationData?.Properties || []}
@@ -313,24 +304,38 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: 'gray',
+    flexGrow: 1,
+    backgroundColor: '#f8f8f8',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  block: {
-    marginVertical: 20,
-    padding: 10,
-    width: '100%',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  text: {
-    color: 'black',
-    margin: 10,
-    fontSize: 18,
+  block: {
+    marginVertical: 20,
+    padding: 15,
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    alignItems: 'center',
+  },
+  title: {
+    color: '#333',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  message: {
+    color: '#ff0000',
+    fontSize: 16,
   },
   flatListContainer: {
     width: '100%',

@@ -8,10 +8,10 @@ const SlotsApproval = ({ organizationName }) => {
 
   useEffect(() => {
     console.log('SlotsApproval screen organizationName:', organizationName);
-    
+
     const fetchBookings = async () => {
       try {
-        const response = await fetch(`http://192.168.11.144:3000/slots/bookings/organisation/${organizationName}`);
+        const response = await fetch(`http://192.168.0.102:3000/slots/bookings/organisation/${organizationName}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -32,7 +32,7 @@ const SlotsApproval = ({ organizationName }) => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`http://192.168.11.144:3000/slots/booking/${id}/status`, {
+      const response = await fetch(`http://192.168.0.102:3000/slots/booking/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -42,25 +42,23 @@ const SlotsApproval = ({ organizationName }) => {
 
       if (response.ok) {
         const result = await response.json();
-        // Alert.alert('Success', `Booking status updated to ${newStatus}`);
-        // Optionally, refresh the bookings list
-        const updatedBookings = bookings.map(booking => 
+        const updatedBookings = bookings.map((booking) =>
           booking._id === id ? { ...booking, status: newStatus } : booking
         );
         setBookings(updatedBookings);
       } else {
         const errorText = await response.text();
-        // Alert.alert('Error', `Failed to update booking status: ${errorText}`);
+        Alert.alert('Error', `Failed to update booking status: ${errorText}`);
       }
     } catch (error) {
-      // Alert.alert('Error', `Failed to update booking status: ${error.message}`);
+      Alert.alert('Error', `Failed to update booking status: ${error.message}`);
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#00ff00" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF5733" />
       </View>
     );
   }
@@ -71,15 +69,18 @@ const SlotsApproval = ({ organizationName }) => {
       <Text style={styles.bookingText}>Date: {item.date}</Text>
       <Text style={styles.bookingText}>Time: {item.time}</Text>
       <Text style={styles.bookingText}>Status: {item.status}</Text>
+      {item.status === 'confirmed' && (
+        <Text style={styles.bookingText}>Room ID: {item.RoomId}</Text>
+      )}
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.approveButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.approveButton]}
           onPress={() => handleStatusChange(item._id, 'confirmed')}
         >
           <Text style={styles.buttonText}>Approve</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.rejectButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.rejectButton]}
           onPress={() => handleStatusChange(item._id, 'rejected')}
         >
           <Text style={styles.buttonText}>Reject</Text>
@@ -108,53 +109,73 @@ const SlotsApproval = ({ organizationName }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'gray',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
     padding: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   header: {
-    fontSize: 24,
-    color: 'white',
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 20,
+    textAlign: 'center',
   },
   bookingContainer: {
     marginVertical: 10,
-    padding: 10,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    width: '100%',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   bookingText: {
     fontSize: 16,
-    color: 'black',
+    color: '#333',
+    marginBottom: 8,
   },
   flatListContainer: {
-    width: '100%',
+    paddingBottom: 20,
   },
   message: {
-    color: 'white',
+    color: '#333',
     fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
   },
   buttonsContainer: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: 15,
   },
   button: {
     flex: 1,
-    padding: 10,
+    padding: 12,
+    borderRadius: 8,
     marginHorizontal: 5,
-    borderRadius: 5,
     alignItems: 'center',
+    elevation: 2,
   },
   approveButton: {
-    backgroundColor: 'green',
+    backgroundColor: '#28a745',
   },
   rejectButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#dc3545',
   },
   buttonText: {
-    color: 'white',
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
   },
 });

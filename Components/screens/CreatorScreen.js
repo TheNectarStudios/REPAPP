@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, TouchableOpacity } from 'react-native';
 import RNFS from 'react-native-fs';
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
@@ -46,7 +46,7 @@ const CreatorScreen = ({ navigateTo }) => {
         const fileContents = await RNFS.readFile(path, 'utf8');
         const { propertyName } = JSON.parse(fileContents);
 
-        const response = await axios.get(`http://192.168.11.144:3000/childproperty/child-property/${propertyName}`);
+        const response = await axios.get(`http://192.168.0.102:3000/childproperty/child-property/${propertyName}`);
         if (response.status === 200) {
           const data = response.data;
           setPropertyData(data);
@@ -79,9 +79,9 @@ const CreatorScreen = ({ navigateTo }) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.text}>Creator Screen</Text>
+      <Text style={styles.title}>Creator Screen</Text>
       {loading && <ActivityIndicator size="large" color="#ffffff" />}
-      {message ? <Text style={styles.text}>{message}</Text> : null}
+      {message ? <Text style={styles.message}>{message}</Text> : null}
 
       {propertyData && (
         <View style={styles.card}>
@@ -102,7 +102,9 @@ const CreatorScreen = ({ navigateTo }) => {
               <Text style={styles.cardDetail}>{propertyData.Area}</Text>
             </View>
             <Text style={styles.cardPrice}>{propertyData.Price}</Text>
-            <Button title="Read More" onPress={() => setShowDescription(true)} />
+            <TouchableOpacity style={styles.readMoreButton} onPress={() => setShowDescription(true)}>
+              <Text style={styles.readMoreButtonText}>Read More</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -113,19 +115,25 @@ const CreatorScreen = ({ navigateTo }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: 'gray',
+    backgroundColor: '#1E1E1E',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  text: {
-    color: 'white',
+  title: {
+    color: '#FFFFFF',
     margin: 10,
-    fontSize: 18,
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  message: {
+    color: '#FF6347',
+    margin: 10,
+    fontSize: 16,
   },
   card: {
     width: '90%',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#333333',
     borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 20,
@@ -143,12 +151,12 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     width: '100%',
     height: 200,
-    backgroundColor: '#ccc',
+    backgroundColor: '#666666',
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardImagePlaceholderText: {
-    color: '#888',
+    color: '#CCCCCC',
     fontSize: 16,
   },
   cardContent: {
@@ -156,12 +164,12 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#888',
+    color: '#AAAAAA',
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFFFFF',
     marginVertical: 5,
   },
   cardDetails: {
@@ -171,14 +179,26 @@ const styles = StyleSheet.create({
   },
   cardDetail: {
     fontSize: 14,
-    color: '#ccc',
+    color: '#CCCCCC',
     marginRight: 10,
   },
   cardPrice: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#FFFFFF',
     marginVertical: 5,
+  },
+  readMoreButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  readMoreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
   },
 });
 

@@ -41,7 +41,7 @@ const ProfilePage = () => {
     if (username) {
       const fetchBookings = async () => {
         try {
-          const response = await axios.get(`http://192.168.11.144:3000/slots/bookings/${username}`);
+          const response = await axios.get(`http://192.168.0.102:3000/slots/bookings/${username}`);
           console.log('API response:', response.data);
           if (response.data) {
             setBookings(response.data);
@@ -70,7 +70,7 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (currentBooking) {
       try {
-        const response = await axios.put(`http://192.168.11.144:3000/slots/booking/${currentBooking._id}`, {
+        const response = await axios.put(`http://192.168.0.102:3000/slots/booking/${currentBooking._id}`, {
           ...currentBooking,
           date: newDate.toISOString().split('T')[0],
           time: newTime,
@@ -104,7 +104,7 @@ const ProfilePage = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const response = await axios.delete(`http://192.168.11.144:3000/slots/booking/${booking._id}`);
+              const response = await axios.delete(`http://192.168.0.102:3000/slots/booking/${booking._id}`);
               console.log('Booking deleted:', response.data);
               setBookings((prevBookings) => prevBookings.filter((b) => b._id !== booking._id));
             } catch (err) {
@@ -133,6 +133,9 @@ const ProfilePage = () => {
             <Text style={styles.bookingText}>Date: {new Date(booking.date).toDateString()}</Text>
             <Text style={styles.bookingText}>Time: {booking.time}</Text>
             <Text style={styles.bookingText}>Status: {booking.status}</Text>
+            {booking.status === 'confirmed' && (
+              <Text style={styles.bookingText}>Room ID: {booking.RoomId}</Text>
+            )}
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={styles.button} onPress={() => handleEdit(booking)}>
                 <Text style={styles.buttonText}>Edit</Text>

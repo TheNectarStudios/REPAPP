@@ -113,7 +113,7 @@ const CreatorScreen = ({ navigateTo }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'gray',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -121,13 +121,19 @@ const styles = StyleSheet.create({
   text: {
     color: 'white',
     margin: 10,
+    fontSize: 18,
   },
   card: {
     width: '90%',
-    backgroundColor: 'white',
+    backgroundColor: '#2C2C2C',
     borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 20,
+    elevation: 5, // Add shadow on Android
+    shadowColor: '#000', // Add shadow on iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
   },
   cardImage: {
     width: '100%',
@@ -155,6 +161,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: 'white',
     marginVertical: 5,
   },
   cardDetails: {
@@ -164,12 +171,13 @@ const styles = StyleSheet.create({
   },
   cardDetail: {
     fontSize: 14,
-    color: '#888',
+    color: '#ccc',
     marginRight: 10,
   },
   cardPrice: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: 'white',
     marginVertical: 5,
   },
 });

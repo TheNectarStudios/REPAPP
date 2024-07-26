@@ -42,7 +42,7 @@ const SlotsApproval = ({ organizationName }) => {
 
       if (response.ok) {
         const result = await response.json();
-        Alert.alert('Success', `Booking status updated to ${newStatus}`);
+        // Alert.alert('Success', `Booking status updated to ${newStatus}`);
         // Optionally, refresh the bookings list
         const updatedBookings = bookings.map(booking => 
           booking._id === id ? { ...booking, status: newStatus } : booking
@@ -50,10 +50,10 @@ const SlotsApproval = ({ organizationName }) => {
         setBookings(updatedBookings);
       } else {
         const errorText = await response.text();
-        Alert.alert('Error', `Failed to update booking status: ${errorText}`);
+        // Alert.alert('Error', `Failed to update booking status: ${errorText}`);
       }
     } catch (error) {
-      Alert.alert('Error', `Failed to update booking status: ${error.message}`);
+      // Alert.alert('Error', `Failed to update booking status: ${error.message}`);
     }
   };
 
@@ -108,7 +108,7 @@ const SlotsApproval = ({ organizationName }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'gray',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,

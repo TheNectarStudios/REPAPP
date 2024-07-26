@@ -184,19 +184,22 @@ const ParentPropertyList = ({ navigateTo }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>ParentPropertyList</Text>
+      <View style={styles.headingBlock}>
+        <Text style={styles.headingText}>Parent Property List</Text>
+      </View>
       {message ? (
-        <Text style={styles.text}>{message}</Text>
+        <Text style={styles.messageText}>{message}</Text>
       ) : (
-        <ScrollView contentContainerStyle={styles.buttonContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {propertyData.map((property, index) => {
             const title = typeof property === 'string' ? property : 'Unknown Property';
             return (
-              <Button
-                key={index}
-                title={title}
-                onPress={() => handleButtonPress(title)}
-              />
+              <View key={index} style={styles.propertyBlock}>
+                <Button
+                  title={title}
+                  onPress={() => handleButtonPress(title)}
+                />
+              </View>
             );
           })}
         </ScrollView>
@@ -208,18 +211,36 @@ const ParentPropertyList = ({ navigateTo }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'gray',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  text: {
+  headingBlock: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  headingText: {
+    fontSize: 24,
+    color: 'black',
+  },
+  messageText: {
     color: 'white',
     fontSize: 18,
     marginBottom: 10,
   },
-  buttonContainer: {
+  scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    width: '100%',
+  },
+  propertyBlock: {
+    backgroundColor: 'white',
+    marginVertical: 10,
+    borderRadius: 10,
+    padding: 10,
   },
 });
 

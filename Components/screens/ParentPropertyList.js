@@ -37,7 +37,7 @@
 
 //     const fetchPropertyData = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.134.91:3000/parentproperty/${parentPropertyName}/child-properties`);
+//         const response = await fetch(`http://192.168.11.144:3000/parentproperty/${parentPropertyName}/child-properties`);
 //         if (response.status === 200) {
 //           const data = await response.json();
 //           setPropertyData(data);
@@ -146,7 +146,7 @@ const ParentPropertyList = ({ navigateTo }) => {
 
     const fetchPropertyData = async () => {
       try {
-        const response = await fetch(`http://192.168.134.91:3000/parentproperty/${parentPropertyName}/child-properties`);
+        const response = await fetch(`http://192.168.11.144:3000/parentproperty/${parentPropertyName}/child-properties`);
         if (response.status === 200) {
           const data = await response.json();
           setPropertyData(data);

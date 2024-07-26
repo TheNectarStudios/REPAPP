@@ -43,7 +43,7 @@
 
 //     const fetchOrganisationName = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.134.91:3000/user/getuserorganisation/${username}`);
+//         const response = await fetch(`http://192.168.11.144:3000/user/getuserorganisation/${username}`);
 
 //         if (response.status === 200) {
 //           const data = await response.json();
@@ -68,7 +68,7 @@
 
 //     const fetchOrganisationData = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.134.91:3000/organisation/organisation/${organizationName}`);
+//         const response = await fetch(`http://192.168.11.144:3000/organisation/organisation/${organizationName}`);
 
 //         if (response.status === 200) {
 //           const data = await response.json();
@@ -95,7 +95,7 @@
 
 //     const fetchBookings = async () => {
 //       try {
-//         const response = await fetch(`http://192.168.134.91:3000/slots/bookings/organisation/${organizationName}`);
+//         const response = await fetch(`http://192.168.11.144:3000/slots/bookings/organisation/${organizationName}`);
 
 //         if (response.status === 200) {
 //           const data = await response.json();
@@ -220,6 +220,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 
 const CreatorHomeScreen = ({ onNavigate }) => {
@@ -231,23 +232,19 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const path = `${RNFS.DocumentDirectoryPath}/user.json`;
-
       try {
-        const fileExists = await RNFS.exists(path);
-        if (fileExists) {
-          const user = await RNFS.readFile(path, 'utf8');
-          const { username } = JSON.parse(user);
-          setUsername(username);
-          console.log('Username fetched from file:', username);
+        const storedUsername = await AsyncStorage.getItem('username');
+        if (storedUsername) {
+          setUsername(storedUsername);
+          console.log('Username fetched from AsyncStorage:', storedUsername);
         } else {
-          console.log('Username file does not exist.');
-          setMessage('Username file does not exist.');
+          console.log('Username not found in AsyncStorage.');
+          setMessage('Username not found in AsyncStorage.');
           setLoading(false);
         }
       } catch (e) {
-        console.error('Failed to fetch username from file:', e);
-        setMessage('Failed to fetch username from file: ' + e.message);
+        console.error('Failed to fetch username from AsyncStorage:', e);
+        setMessage('Failed to fetch username from AsyncStorage: ' + e.message);
         setLoading(false);
       }
     };
@@ -262,7 +259,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationName = async () => {
       try {
-        const response = await fetch(`http://192.168.134.91:3000/user/getuserorganisation/${username}`);
+        const response = await fetch(`http://192.168.11.144:3000/user/getuserorganisation/${username}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -287,7 +284,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationData = async () => {
       try {
-        const response = await fetch(`http://192.168.134.91:3000/organisation/organisation/${organizationName}`);
+        const response = await fetch(`http://192.168.11.144:3000/organisation/organisation/${organizationName}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -308,23 +305,22 @@ const CreatorHomeScreen = ({ onNavigate }) => {
   }, [organizationName]);
 
   const handleParentPropertyPress = async (propertyName) => {
-    const propertyPath = `${RNFS.DocumentDirectoryPath}/selectedProperty.json`;
-    const orgPath = `${RNFS.DocumentDirectoryPath}/selectedOrganization.json`;
     try {
-      // Save both propertyName and organizationName
+      // Save both propertyName and organizationName using AsyncStorage
       await Promise.all([
-        RNFS.writeFile(propertyPath, JSON.stringify({ propertyName }), 'utf8'),
-        RNFS.writeFile(orgPath, JSON.stringify({ organizationName }), 'utf8')
+        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedProperty.json', JSON.stringify({ propertyName: propertyName }), 'utf8'),
+        RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedOrganization.json', JSON.stringify({ organizationName: organizationName }), 'utf8')
       ]);
-      onNavigate('ParentPropertyList');
+      onNavigate('ParentPropertyList'); // Call onNavigate to switch screen
     } catch (e) {
-      console.error('Failed to write property name or organization name to file:', e);
+      console.error('Failed to save data:', e);
+      Alert.alert('Error', 'Failed to save data.');
     }
   };
 
   const handleSlotsPress = () => {
     console.log('Navigating to SlotsApproval with organizationName:', organizationName);
-    onNavigate('SlotsApproval', { organizationName });
+    onNavigate('SlotsApproval', { organizationName }); // Call onNavigate to switch screen
   };
 
   const renderItem = ({ item }) => (

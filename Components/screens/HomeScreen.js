@@ -45,7 +45,7 @@ const HomeScreen = () => {
 
   const fetchHouses = async () => {
     try {
-      const response = await axios.get('http://192.168.134.91:3000/childproperty/child-properties');
+      const response = await axios.get('http://192.168.11.144:3000/childproperty/child-properties');
       const housesWithImages = await Promise.all(response.data.map(async (property) => {
         const imageUrl = await fetchImageFromS3(property.OrganisationName, property.ParentPropertyName, property.ChildPropertyName);
         return { ...property, imageUrl };

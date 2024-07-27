@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SlotsApproval = ({ organizationName }) => {
+const SlotsApproval = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
 
   useEffect(() => {
-    console.log('SlotsApproval screen organizationName:', organizationName);
+    const fetchOrganizationName = async () => {
+      try {
+        const storedOrganizationName = await AsyncStorage.getItem('organizationName');
+        if (storedOrganizationName) {
+          setOrganizationName(storedOrganizationName);
+        } else {
+          setMessage('Organization name not found in AsyncStorage.');
+          setLoading(false);
+        }
+      } catch (error) {
+        setMessage('Failed to fetch organization name from AsyncStorage: ' + error.message);
+        setLoading(false);
+      }
+    };
+
+    fetchOrganizationName();
+  }, []);
+
+  useEffect(() => {
+    if (!organizationName) return;
 
     const fetchBookings = async () => {
       try {

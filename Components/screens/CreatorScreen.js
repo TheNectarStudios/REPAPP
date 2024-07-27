@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, TouchableOpacity } from 'react-native';
-import RNFS from 'react-native-fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
 import DescriptionCreator from './DescriptionCreator'; // Adjust the path as necessary
@@ -40,17 +40,14 @@ const CreatorScreen = ({ navigateTo }) => {
   const fetchPropertyData = async () => {
     setLoading(true);
     try {
-      const path = RNFS.DocumentDirectoryPath + '/selectedChildProperty.json';
-      const fileExists = await RNFS.exists(path);
-      if (fileExists) {
-        const fileContents = await RNFS.readFile(path, 'utf8');
-        const { propertyName } = JSON.parse(fileContents);
+      const storedPropertyName = await AsyncStorage.getItem('childPropertyName');
+      if (storedPropertyName) {
+        setSelectedPropertyName(storedPropertyName);
 
-        const response = await axios.get(`http://192.168.11.144:3000/childproperty/child-property/${propertyName}`);
+        const response = await axios.get(`http://192.168.11.144:3000/childproperty/child-property/${storedPropertyName}`);
         if (response.status === 200) {
           const data = response.data;
           setPropertyData(data);
-          setSelectedPropertyName(data.ChildPropertyName);
 
           // Fetch the image using the fetched property data
           const imageUrl = await fetchImageFromS3(data.OrganisationName, data.ParentPropertyName, data.ChildPropertyName);
@@ -60,7 +57,7 @@ const CreatorScreen = ({ navigateTo }) => {
           setMessage(`Error: ${errorText}`);
         }
       } else {
-        setMessage('Selected child property file does not exist.');
+        setMessage('Selected child property name not found in AsyncStorage.');
       }
     } catch (error) {
       setMessage('Error fetching property data: ' + error.message);

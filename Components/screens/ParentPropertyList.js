@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, Button, ScrollView, Image } from 'react-native';
-import RNFS from 'react-native-fs';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import s3 from './../../awsConfig'; // Adjust the path as necessary
 
 const fetchImageFromS3 = async () => {
@@ -32,19 +32,16 @@ const ParentPropertyList = ({ navigateTo }) => {
 
   useEffect(() => {
     const fetchParentPropertyName = async () => {
-      const path = RNFS.DocumentDirectoryPath + '/selectedProperty.json';
       try {
-        const fileExists = await RNFS.exists(path);
-        if (fileExists) {
-          const fileContents = await RNFS.readFile(path, 'utf8');
-          const { propertyName } = JSON.parse(fileContents);
-          setParentPropertyName(propertyName);
+        const storedPropertyName = await AsyncStorage.getItem('parentPropertyName');
+        if (storedPropertyName) {
+          setParentPropertyName(storedPropertyName);
         } else {
-          setMessage('Selected property file does not exist.');
+          setMessage('Selected property name not found in AsyncStorage.');
           setLoading(false);
         }
       } catch (e) {
-        setMessage('Failed to fetch property name from file: ' + e.message);
+        setMessage('Failed to fetch property name from AsyncStorage: ' + e.message);
         setLoading(false);
       }
     };
@@ -81,13 +78,13 @@ const ParentPropertyList = ({ navigateTo }) => {
     fetchPropertyData();
   }, [parentPropertyName]);
 
-  const handleButtonPress = async (title) => {
-    const path = RNFS.DocumentDirectoryPath + '/selectedChildProperty.json';
+  const handleButtonPress = async (property) => {
     try {
-      await RNFS.writeFile(path, JSON.stringify({ propertyName: title }), 'utf8');
-      navigateTo('CreatorScreen');
-    } catch (e) {
-      Alert.alert('Error', 'Failed to save property name: ' + e.message);
+      await AsyncStorage.setItem('childPropertyName', property);
+      console.log(`Selected Child Property: ${property}`);
+      navigateTo('CreatorScreen'); // Replace 'CreatorScreen' with the actual screen name you want to navigate to
+    } catch (error) {
+      setMessage('Error storing property data: ' + error.message);
     }
   };
 
@@ -162,7 +159,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
-    width: '100%', // Make blocks wider
+    width: '100%',
   },
   itemImage: {
     width: '100%',
@@ -173,3 +170,5 @@ const styles = StyleSheet.create({
 });
 
 export default ParentPropertyList;
+
+

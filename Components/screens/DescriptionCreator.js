@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Button, Image, TouchableOpacity } from 'react-native';
-import DatePicker from './DateTimePicker'; // Adjust the path as necessary
+import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 
 const DescriptionCreator = ({ propertyName, navigateBack }) => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [propertyData, setPropertyData] = useState(null);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [date, setDate] = useState(new Date());
 
   const fetchPropertyData = async () => {
     try {
@@ -25,8 +27,13 @@ const DescriptionCreator = ({ propertyName, navigateBack }) => {
     }
   };
 
-  const handleAddDate = (date) => {
-    setSelectedDates([...selectedDates, date]);
+  const handleAddDate = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShowDatePicker(false);
+    setDate(currentDate);
+    if (selectedDate) {
+      setSelectedDates([...selectedDates, selectedDate]);
+    }
   };
 
   const handleConfirm = () => {
@@ -70,7 +77,16 @@ const DescriptionCreator = ({ propertyName, navigateBack }) => {
             <View style={styles.mapPlaceholder}>
               <Text style={styles.mapPlaceholderText}>Map Placeholder</Text>
             </View>
-            <Button title="Select Date" onPress={handleConfirm} />
+            <Button title="Select Date" onPress={() => setShowDatePicker(true)} />
+            {showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="default"
+                onChange={handleAddDate}
+              />
+            )}
+            <Button title="Confirm Dates" onPress={handleConfirm} />
           </View>
           <Button title="Back" onPress={navigateBack} />
         </>

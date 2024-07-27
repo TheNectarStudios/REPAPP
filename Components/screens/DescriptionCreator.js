@@ -10,7 +10,7 @@ const DescriptionCreator = ({ propertyName, navigateBack }) => {
 
   const fetchPropertyData = async () => {
     try {
-      const response = await fetch(`http://192.168.0.102:3000/childproperty/child-property/${propertyName}`);
+      const response = await fetch(`http://192.168.11.144:3000/childproperty/child-property/${propertyName}`);
       if (response.status === 200) {
         const data = await response.json();
         setPropertyData(data);

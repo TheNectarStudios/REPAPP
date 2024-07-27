@@ -46,7 +46,7 @@ const CreatorScreen = ({ navigateTo }) => {
         const fileContents = await RNFS.readFile(path, 'utf8');
         const { propertyName } = JSON.parse(fileContents);
 
-        const response = await axios.get(`http://192.168.0.102:3000/childproperty/child-property/${propertyName}`);
+        const response = await axios.get(`http://192.168.11.144:3000/childproperty/child-property/${propertyName}`);
         if (response.status === 200) {
           const data = response.data;
           setPropertyData(data);

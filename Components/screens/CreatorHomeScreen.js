@@ -1,198 +1,45 @@
-
-// import React, { useState, useEffect } from 'react';
-// import { View, Text, StyleSheet, Button, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import RNFS from 'react-native-fs';
-
-// const CreatorHomeScreen = ({ onNavigate }) => {
-//   const [organizationData, setOrganizationData] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [message, setMessage] = useState('');
-//   const [organizationName, setOrganizationName] = useState('');
-//   const [username, setUsername] = useState('');
-
-//   useEffect(() => {
-//     const fetchUsername = async () => {
-//       try {
-//         const storedUsername = await AsyncStorage.getItem('username');
-//         if (storedUsername) {
-//           setUsername(storedUsername);
-//           console.log('Username fetched from AsyncStorage:', storedUsername);
-//         } else {
-//           console.log('Username not found in AsyncStorage.');
-//           setMessage('Username not found in AsyncStorage.');
-//           setLoading(false);
-//         }
-//       } catch (e) {
-//         console.error('Failed to fetch username from AsyncStorage:', e);
-//         setMessage('Failed to fetch username from AsyncStorage: ' + e.message);
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchUsername();
-//   }, []);
-
-//   useEffect(() => {
-//     if (!username) {
-//       return;
-//     }
-
-//     const fetchOrganisationName = async () => {
-//       try {
-//         const response = await fetch(`http://192.168.0.102:3000/user/getuserorganisation/${username}`);
-
-//         if (response.status === 200) {
-//           const data = await response.json();
-//           setOrganizationName(data.organisationName);
-//           Alert.alert('Fetched organisation data:', JSON.stringify(data));
-//         } else {
-//           const errorText = await response.text();
-//           setMessage(`Error: ${errorText}`);
-//         }
-//       } catch (error) {
-//         setMessage('Error fetching organisation data: ' + error.message);
-//       }
-//     };
-
-//     fetchOrganisationName();
-//   }, [username]);
-
-//   useEffect(() => {
-//     if (!organizationName) {
-//       return;
-//     }
-
-//     const fetchOrganisationData = async () => {
-//       try {
-//         const response = await fetch(`http://192.168.0.102:3000/organisation/organisation/${organizationName}`);
-
-//         if (response.status === 200) {
-//           const data = await response.json();
-//           setOrganizationData(data);
-//           Alert.alert('Fetched organisation data:', JSON.stringify(data));
-//         } else {
-//           const errorText = await response.text();
-//           setMessage(`Error: ${errorText}`);
-//         }
-//       } catch (error) {
-//         setMessage('Error fetching organisation data: ' + error.message);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchOrganisationData();
-//   }, [organizationName]);
-
-//   const handleParentPropertyPress = async (propertyName) => {
-//     try {
-//       // Save both propertyName and organizationName using AsyncStorage
-//       await Promise.all([
-//         RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedProperty.json', JSON.stringify({ propertyName: propertyName }), 'utf8'),
-//         RNFS.writeFile(RNFS.DocumentDirectoryPath + '/selectedOrganization.json', JSON.stringify({ organizationName: organizationName }), 'utf8')
-//       ]);
-//       onNavigate('ParentPropertyList'); // Call onNavigate to switch screen
-//     } catch (e) {
-//       console.error('Failed to save data:', e);
-//       Alert.alert('Error', 'Failed to save data.');
-//     }
-//   };
-
-//   const handleSlotsPress = () => {
-//     console.log('Navigating to SlotsApproval with organizationName:', organizationName);
-//     onNavigate('SlotsApproval', { organizationName }); // Call onNavigate to switch screen
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <View style={styles.buttonContainer}>
-//       <Button
-//         title={item}
-//         onPress={() => handleParentPropertyPress(item)}
-//         color="#007BFF"
-//       />
-//     </View>
-//   );
-
-//   if (loading) {
-//     return (
-//       <View style={styles.container}>
-//         <ActivityIndicator size="large" color="#00ff00" />
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <ScrollView contentContainerStyle={styles.container}>
-//       <Text style={styles.text}>Organization: {organizationName}</Text>
-//       <Button title="Slots" onPress={handleSlotsPress} color="#007BFF" />
-//       {message ? (
-//         <Text style={styles.text}>{message}</Text>
-//       ) : (
-//         <FlatList
-//           data={organizationData?.Properties || []}
-//           renderItem={renderItem}
-//           keyExtractor={(item) => item}
-//           contentContainerStyle={styles.flatListContainer}
-//         />
-//       )}
-//     </ScrollView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: 'black',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 20,
-//   },
-//   text: {
-//     color: 'white',
-//     margin: 10,
-//     fontSize: 18,
-//   },
-//   flatListContainer: {
-//     width: '100%',
-//     alignItems: 'center',
-//   },
-//   buttonContainer: {
-//     marginVertical: 10,
-//     width: '80%',
-//   },
-// });
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, FlatList, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
+import axios from 'axios';
+import s3 from './../../awsConfig'; // Adjust the path as necessary
+
+
 
 const CreatorHomeScreen = ({ onNavigate }) => {
   const [organizationData, setOrganizationData] = useState(null);
+  const [propertyData, setPropertyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [organizationName, setOrganizationName] = useState('');
   const [username, setUsername] = useState('');
+  const [selectedPropertyName, setSelectedPropertyName] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
     const fetchUsername = async () => {
       try {
+        console.log('Fetching username from AsyncStorage');
         const storedUsername = await AsyncStorage.getItem('username');
+        console.log('Fetched username:', storedUsername);
         if (storedUsername) {
           setUsername(storedUsername);
         } else {
+          console.log('Username not found in AsyncStorage.');
           setMessage('Username not found in AsyncStorage.');
           setLoading(false);
         }
       } catch (e) {
+        console.error('Failed to fetch username from AsyncStorage:', e);
         setMessage('Failed to fetch username from AsyncStorage: ' + e.message);
         setLoading(false);
       }
     };
-
+  
     fetchUsername();
   }, []);
+  
 
   useEffect(() => {
     if (!username) {
@@ -201,7 +48,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationName = async () => {
       try {
-        const response = await fetch(`http://192.168.0.102:3000/user/getuserorganisation/${username}`);
+        const response = await fetch(`http://192.168.11.144:3000/user/getuserorganisation/${username}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -225,7 +72,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationData = async () => {
       try {
-        const response = await fetch(`http://192.168.0.102:3000/organisation/organisation/${organizationName}`);
+        const response = await fetch(`http://192.168.11.144:3000/organisation/organisation/${organizationName}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -244,6 +91,68 @@ const CreatorHomeScreen = ({ onNavigate }) => {
     fetchOrganisationData();
   }, [organizationName]);
 
+  const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
+    if (!organisationName || !parentPropertyName || !childPropertyName) {
+      console.error('Missing parameters for S3 key:', { organisationName, parentPropertyName, childPropertyName });
+      return 'https://via.placeholder.com/300x200.png?text=Image+Not+Available';
+    }
+  
+    const key = `${organisationName}/${parentPropertyName}/${childPropertyName}/images/thumbnail/thumbnail.jpg`;
+    console.log('Fetching image with key:', key);
+  
+    try {
+      const params = {
+        Bucket: 'ignitens',
+        Key: key,
+        Expires: 30, // URL expiration time in seconds
+      };
+      const imageUrl = await s3.getSignedUrlPromise('getObject', params);
+      console.log('Generated Image URL:', imageUrl); // Log the generated URL
+      return imageUrl;
+    } catch (error) {
+      console.error('Error fetching image from S3:', error);
+      return 'https://via.placeholder.com/300x200.png?text=Image+Not+Available';
+    }
+  }; 
+
+  const fetchPropertyData = async () => {
+    setLoading(true);
+    try {
+      const path = RNFS.DocumentDirectoryPath + '/selectedChildProperty.json';
+      const fileExists = await RNFS.exists(path);
+      if (fileExists) {
+        const fileContents = await RNFS.readFile(path, 'utf8');
+        const { propertyName } = JSON.parse(fileContents);
+
+        const response = await axios.get(`http://192.168.11.144:3000/childproperty/child-property/${propertyName}`);
+        if (response.status === 200) {
+          const data = response.data;
+          setPropertyData(data);
+          setSelectedPropertyName(data.ChildPropertyName);
+
+          // Fetch the image using the fetched property data
+          const imageUrl = await fetchImageFromS3(data.OrganisationName, data.ParentPropertyName, data.ChildPropertyName);
+          setImageUrl(imageUrl);
+        } else {
+          const errorText = await response.text();
+          setMessage(`Error: ${errorText}`);
+        }
+      } else {
+        setMessage('Selected child property file does not exist.');
+      }
+    } catch (error) {
+      setMessage('Error fetching property data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPropertyData();
+  }, []);
+
+  
+
   const handleParentPropertyPress = async (propertyName) => {
     try {
       await Promise.all([
@@ -261,12 +170,18 @@ const CreatorHomeScreen = ({ onNavigate }) => {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.buttonContainer}>
-      <Button
-        title={item}
-        onPress={() => handleParentPropertyPress(item)}
-        color="#007BFF"
+    <View style={styles.itemContainer}>
+      <Image
+        source={{ uri: imageUrl || 'https://via.placeholder.com/150.png?text=Image' }}
+        style={styles.itemImage}
       />
+      <View style={styles.buttonContainer}>
+        <Button
+          title={item}
+          onPress={() => handleParentPropertyPress(item)}
+          color="#007BFF"
+        />
+      </View>
     </View>
   );
 
@@ -325,25 +240,40 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
-    alignItems: 'center',
+    elevation: 5, // For Android shadow effect
   },
   title: {
-    color: '#333',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
   },
   message: {
     color: '#ff0000',
     fontSize: 16,
+    textAlign: 'center',
   },
   flatListContainer: {
+    paddingBottom: 20,
+  },
+  itemContainer: {
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3, // For Android shadow effect
+  },
+  itemImage: {
     width: '100%',
-    alignItems: 'center',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   buttonContainer: {
-    marginVertical: 10,
-    width: '80%',
+    marginTop: 10,
   },
 });
 

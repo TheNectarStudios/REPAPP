@@ -15,7 +15,7 @@ const App = () => {
   const handleRegister = async () => {
     try {
       console.log('Starting registration process...');
-      const response = await fetch('http://192.168.11.144:3000/user/register', {
+      const response = await fetch('http://192.168.0.102:3000/user/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ const App = () => {
 
   const handleGettingRole = async () => {
     try {
-      const response = await fetch('http://192.168.11.144:3000/user/getuser', {
+      const response = await fetch('http://192.168.0.102:3000/user/getuser', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ const App = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.11.144:3000/user/login', {
+      const response = await fetch('http://192.168.0.102:3000/user/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const App = () => {
 
   const handleVerifyOTP = async () => {
     try {
-      const response = await fetch('http://192.168.11.144:3000/user/verify', {
+      const response = await fetch('http://192.168.0.102:3000/user/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Modal from 'react-native-modal';
 import DatePicker from './DatePicker';
 import { Picker } from '@react-native-picker/picker';
+import RtcEngine from 'react-native-agora';
+
+const AGORA_APP_ID = '159d9ac65d1949e4a159d0bb2351e9ef';  // Replace with your Agora App ID
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
@@ -16,6 +19,11 @@ const ProfilePage = () => {
   const [newDate, setNewDate] = useState(null);
   const [newTime, setNewTime] = useState('');
   const [bookingMessage, setBookingMessage] = useState('');
+  const [channelName, setChannelName] = useState('');
+  const [userToken, setUserToken] = useState('');
+  const [isVideoCallVisible, setIsVideoCallVisible] = useState(false);
+  const [isAgoraInitialized, setIsAgoraInitialized] = useState(false);
+  const agoraEngineRef = useRef(null);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -41,7 +49,7 @@ const ProfilePage = () => {
     if (username) {
       const fetchBookings = async () => {
         try {
-          const response = await axios.get(`http://192.168.11.144:3000/slots/bookings/${username}`);
+          const response = await axios.get(`http://192.168.0.102:3000/slots/bookings/${username}`);
           console.log('API response:', response.data);
           if (response.data) {
             setBookings(response.data);
@@ -60,6 +68,30 @@ const ProfilePage = () => {
     }
   }, [username]);
 
+  useEffect(() => {
+    const initAgoraEngine = async () => {
+      try {
+        console.log('Initializing Agora engine...');
+        if (!agoraEngineRef.current) {
+          agoraEngineRef.current = await RtcEngine.create(AGORA_APP_ID);
+          console.log('Agora engine created');
+          await agoraEngineRef.current.enableVideo();
+          console.log('Video enabled');
+          setIsAgoraInitialized(true);
+        }
+      } catch (err) {
+        console.error('Error initializing Agora engine:', err);
+      }
+    };
+  
+    initAgoraEngine();
+  
+    return () => {
+      if (agoraEngineRef.current) {
+        agoraEngineRef.current.destroy();
+      }
+    };
+  }, []);
   const handleEdit = (booking) => {
     setCurrentBooking(booking);
     setNewDate(new Date(booking.date));
@@ -70,7 +102,7 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (currentBooking) {
       try {
-        const response = await axios.put(`http://192.168.11.144:3000/slots/booking/${currentBooking._id}`, {
+        const response = await axios.put(`http://192.168.0.102:3000/slots/booking/${currentBooking._id}`, {
           ...currentBooking,
           date: newDate.toISOString().split('T')[0],
           time: newTime,
@@ -104,7 +136,7 @@ const ProfilePage = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const response = await axios.delete(`http://192.168.11.144:3000/slots/booking/${booking._id}`);
+              const response = await axios.delete(`http://192.168.0.102:3000/slots/booking/${booking._id}`);
               console.log('Booking deleted:', response.data);
               setBookings((prevBookings) => prevBookings.filter((b) => b._id !== booking._id));
             } catch (err) {
@@ -118,6 +150,58 @@ const ProfilePage = () => {
     );
   };
 
+  const handleVideoCall = async (organisationName) => {
+    try {
+      console.log('Fetching organisation details...');
+      const response = await axios.get(`http://192.168.0.102:3000/organisation/organisation/${organisationName}`);
+      const rootUserName = response.data.RootUserName;
+      console.log('Organisation details fetched', response.data);
+  
+      // Get the channel name and user token from your backend
+      console.log('Fetching Agora token...');
+      const channelResponse = await axios.post('http://192.168.0.102:3000/get-agora-token', {
+        user: rootUserName,
+      });
+      const { channel, token } = channelResponse.data;
+      console.log('Agora token fetched', channelResponse.data);
+  
+      setChannelName(channel);
+      setUserToken(token);
+      setIsVideoCallVisible(true);
+  
+      const engine = agoraEngineRef.current;
+      console.log('Checking Agora engine:', engine);
+  
+      if (engine) {
+        if (!engine.isInitialized) {
+          console.log('Initializing Agora engine...');
+          await engine.enableVideo();
+          console.log('Video enabled');
+          engine.isInitialized = true;
+        }
+  
+        console.log('Joining channel...');
+        await engine.joinChannel(token, channel, null, 0).catch((err) => {
+          console.error('Error joining Agora channel:', err);
+          Alert.alert('Error', 'Failed to join the video call');
+        });
+        console.log('Channel joined');
+      } else {
+        console.error('Agora engine is not initialized');
+        Alert.alert('Error', 'Agora engine is not initialized');
+      }
+    } catch (err) {
+      console.error('Error fetching organisation details:', err);
+      Alert.alert('Error', 'Failed to fetch organisation details');
+    }
+  };
+  const handleEndCall = async () => {
+    const engine = agoraEngineRef.current;
+    if (engine) {
+      await engine.leaveChannel();
+    }
+    setIsVideoCallVisible(false);
+  };
   if (loading) return <ActivityIndicator size="large" color="#FF5733" />;
   if (error) return <Text style={styles.error}>{error}</Text>;
 
@@ -143,6 +227,9 @@ const ProfilePage = () => {
               <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDelete(booking)}>
                 <Text style={styles.buttonText}>Delete</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.videoCallButton]} onPress={() => handleVideoCall(booking.organisationName)}>
+                <Text style={styles.buttonText}>Video Call</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ))
@@ -153,7 +240,7 @@ const ProfilePage = () => {
       <Modal isVisible={isModalVisible} onBackdropPress={() => setIsModalVisible(false)}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Edit Booking</Text>
-          <DatePicker 
+          <DatePicker
             date={newDate || new Date()}
             onDateChange={setNewDate}
           />
@@ -181,7 +268,6 @@ const ProfilePage = () => {
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     marginTop: 30,
@@ -214,13 +300,19 @@ const styles = StyleSheet.create({
       height: 4,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   bookingText: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 5,
+  },
+  noBookings: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginVertical: 50,
+    color: '#FF5733',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -228,65 +320,54 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   button: {
-    backgroundColor: '#28a745',
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 5,
+    backgroundColor: '#FF5733',
+    padding: 10,
+    borderRadius: 10,
+    width: '30%',
     alignItems: 'center',
-    elevation: 2,
   },
   deleteButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#ff3333',
   },
-  cancelButton: {
-    backgroundColor: '#6c757d',
+  videoCallButton: {
+    backgroundColor: '#33cc33',
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  error: {
-    color: '#dc3545',
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 14,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 12,
-    borderColor: '#ddd',
-    borderWidth: 1,
+    backgroundColor: 'white',
+    padding: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 15,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-    marginTop: 15,
-    backgroundColor: '#f8f9fa',
-  },
-  bookingMessage: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#007bff',
-    textAlign: 'center',
-  },
-  noBookings: {
     fontSize: 18,
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
   modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
+  },
+  cancelButton: {
+    backgroundColor: '#aaa',
+  },
+  picker: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  bookingMessage: {
+    color: 'green',
+    marginTop: 15,
+  },
+  error: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
     marginTop: 20,
   },
 });

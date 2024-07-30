@@ -40,7 +40,7 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
     }
 
     try {
-      const response = await fetch('http://192.168.0.102:3000/slots/booking', {
+      const response = await fetch('http://192.168.174.72:3000/slots/booking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

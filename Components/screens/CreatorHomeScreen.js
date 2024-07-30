@@ -34,7 +34,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
 
     const fetchOrganisationName = async () => {
       try {
-        const response = await axios.get(`http://192.168.0.102:3000/user/getuserorganisation/${username}`);
+        const response = await axios.get(`http://192.168.174.72:3000/user/getuserorganisation/${username}`);
         if (response.status === 200) {
           const data = response.data;
           setOrganizationName(data.organisationName);
@@ -58,7 +58,7 @@ const CreatorHomeScreen = ({ onNavigate }) => {
     const fetchPropertyData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://192.168.0.102:3000/organisation/organisation/${organizationName}`);
+        const response = await axios.get(`http://192.168.174.72:3000/organisation/organisation/${organizationName}`);
         if (response.status === 200) {
           setPropertyData(response.data);
         } else {

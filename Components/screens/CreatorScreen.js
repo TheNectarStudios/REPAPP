@@ -44,7 +44,7 @@ const CreatorScreen = ({ navigateTo }) => {
       if (storedPropertyName) {
         setSelectedPropertyName(storedPropertyName);
 
-        const response = await axios.get(`http://192.168.174.72:3000/childproperty/child-property/${storedPropertyName}`);
+        const response = await axios.get(`https://theserver-tp6r.onrender.com/childproperty/child-property/${storedPropertyName}`);
         if (response.status === 200) {
           const data = response.data;
           setPropertyData(data);

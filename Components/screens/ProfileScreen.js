@@ -49,7 +49,7 @@ const ProfilePage = () => {
     if (username) {
       const fetchBookings = async () => {
         try {
-          const response = await axios.get(`http://192.168.174.72:3000/slots/bookings/${username}`);
+          const response = await axios.get(`https://theserver-tp6r.onrender.com/slots/bookings/${username}`);
           console.log('API response:', response.data);
           if (response.data) {
             setBookings(response.data);
@@ -102,7 +102,7 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (currentBooking) {
       try {
-        const response = await axios.put(`http://192.168.174.72:3000/slots/booking/${currentBooking._id}`, {
+        const response = await axios.put(`https://theserver-tp6r.onrender.com/slots/booking/${currentBooking._id}`, {
           ...currentBooking,
           date: newDate.toISOString().split('T')[0],
           time: newTime,
@@ -136,7 +136,7 @@ const ProfilePage = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const response = await axios.delete(`http://192.168.174.72:3000/slots/booking/${booking._id}`);
+              const response = await axios.delete(`https://theserver-tp6r.onrender.com/slots/booking/${booking._id}`);
               console.log('Booking deleted:', response.data);
               setBookings((prevBookings) => prevBookings.filter((b) => b._id !== booking._id));
             } catch (err) {
@@ -153,13 +153,13 @@ const ProfilePage = () => {
   const handleVideoCall = async (organisationName) => {
     try {
       console.log('Fetching organisation details...');
-      const response = await axios.get(`http://192.168.174.72:3000/organisation/organisation/${organisationName}`);
+      const response = await axios.get(`https://theserver-tp6r.onrender.com/organisation/organisation/${organisationName}`);
       const rootUserName = response.data.RootUserName;
       console.log('Organisation details fetched', response.data);
   
       // Get the channel name and user token from your backend
       console.log('Fetching Agora token...');
-      const channelResponse = await axios.post('http://192.168.174.72:3000/get-agora-token', {
+      const channelResponse = await axios.post('https://theserver-tp6r.onrender.com/get-agora-token', {
         user: rootUserName,
       });
       const { channel, token } = channelResponse.data;

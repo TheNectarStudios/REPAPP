@@ -56,7 +56,7 @@ const ParentPropertyList = ({ navigateTo }) => {
 
     const fetchPropertyData = async () => {
       try {
-        const response = await fetch(`http://192.168.174.72:3000/parentproperty/${parentPropertyName}/child-properties`);
+        const response = await fetch(`https://theserver-tp6r.onrender.com/parentproperty/${parentPropertyName}/child-properties`);
         if (response.status === 200) {
           const data = await response.json();
           setPropertyData(data);

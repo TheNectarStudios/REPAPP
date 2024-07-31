@@ -26,12 +26,12 @@ const DatePicker = ({ date, onDateChange, onConfirm }) => {
         />
       )}
       <Text style={styles.selectedDate}>Selected Date: {date.toDateString()}</Text>
-      <Button
+      {/* <Button
         title="Confirm Date"
         onPress={onConfirm}
         disabled={!date}
         style={styles.confirmButton}
-      />
+      /> */}
     </View>
   );
 };

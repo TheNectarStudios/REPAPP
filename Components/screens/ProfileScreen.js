@@ -1,29 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import Modal from 'react-native-modal';
 import DatePicker from './DatePicker';
 import { Picker } from '@react-native-picker/picker';
 import RtcEngine from 'react-native-agora';
+import axios from 'axios';
 
-const AGORA_APP_ID = '159d9ac65d1949e4a159d0bb2351e9ef';  // Replace with your Agora App ID
+const AGORA_APP_ID = '159d9ac65d1949e4a159d0bb2351e9ef'; // Replace with your Agora App ID
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/100'; // Placeholder image URL
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
-  const [bookings, setBookings] = useState([]);
+  const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [currentBooking, setCurrentBooking] = useState(null);
+  const [currentItem, setCurrentItem] = useState(null);
   const [newDate, setNewDate] = useState(null);
   const [newTime, setNewTime] = useState('');
-  const [bookingMessage, setBookingMessage] = useState('');
+  const [isVideoCallVisible, setIsVideoCallVisible] = useState(false);
   const [channelName, setChannelName] = useState('');
   const [userToken, setUserToken] = useState('');
-  const [isVideoCallVisible, setIsVideoCallVisible] = useState(false);
-  const [isAgoraInitialized, setIsAgoraInitialized] = useState(false);
   const agoraEngineRef = useRef(null);
+  const [imageLoading, setImageLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -46,27 +46,24 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => {
-    if (username) {
-      const fetchBookings = async () => {
-        try {
-          const response = await axios.get(`https://theserver-tp6r.onrender.com/slots/bookings/${username}`);
-          console.log('API response:', response.data);
-          if (response.data) {
-            setBookings(response.data);
-          } else {
-            setError('No bookings found in response');
-          }
-        } catch (err) {
-          console.error('Error fetching bookings:', err);
-          setError('Failed to fetch bookings');
-        } finally {
-          setLoading(false);
+    const fetchWatchlist = async () => {
+      try {
+        const storedWatchlist = await AsyncStorage.getItem('watchlist');
+        if (storedWatchlist) {
+          setWatchlist(JSON.parse(storedWatchlist));
+        } else {
+          setError('No watchlist found in storage');
         }
-      };
+      } catch (err) {
+        console.error('Error fetching watchlist from AsyncStorage:', err);
+        setError('Failed to fetch watchlist from storage');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      fetchBookings();
-    }
-  }, [username]);
+    fetchWatchlist();
+  }, []);
 
   useEffect(() => {
     const initAgoraEngine = async () => {
@@ -77,56 +74,25 @@ const ProfilePage = () => {
           console.log('Agora engine created');
           await agoraEngineRef.current.enableVideo();
           console.log('Video enabled');
-          setIsAgoraInitialized(true);
         }
       } catch (err) {
         console.error('Error initializing Agora engine:', err);
       }
     };
-  
+
     initAgoraEngine();
-  
+
     return () => {
       if (agoraEngineRef.current) {
         agoraEngineRef.current.destroy();
       }
     };
   }, []);
-  const handleEdit = (booking) => {
-    setCurrentBooking(booking);
-    setNewDate(new Date(booking.date));
-    setNewTime(booking.time);
-    setIsModalVisible(true);
-  };
 
-  const handleSave = async () => {
-    if (currentBooking) {
-      try {
-        const response = await axios.put(`https://theserver-tp6r.onrender.com/slots/booking/${currentBooking._id}`, {
-          ...currentBooking,
-          date: newDate.toISOString().split('T')[0],
-          time: newTime,
-        });
-        console.log('Booking updated:', response.data);
-        setBookings((prevBookings) =>
-          prevBookings.map((b) => (b._id === currentBooking._id ? response.data.booking : b))
-        );
-        setIsModalVisible(false);
-      } catch (err) {
-        console.error('Error updating booking:', err);
-        Alert.alert('Error', 'Failed to update booking');
-      }
-    }
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
-
-  const handleDelete = (booking) => {
+  const handleDelete = (item) => {
     Alert.alert(
-      'Delete Booking',
-      `Are you sure you want to delete booking for ${booking.propertyName}?`,
+      'Delete Item',
+      `Are you sure you want to delete ${item.propertyName}?`,
       [
         {
           text: 'Cancel',
@@ -136,12 +102,12 @@ const ProfilePage = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const response = await axios.delete(`https://theserver-tp6r.onrender.com/slots/booking/${booking._id}`);
-              console.log('Booking deleted:', response.data);
-              setBookings((prevBookings) => prevBookings.filter((b) => b._id !== booking._id));
+              const updatedWatchlist = watchlist.filter((w) => w.id !== item.id);
+              await AsyncStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+              setWatchlist(updatedWatchlist);
             } catch (err) {
-              console.error('Error deleting booking:', err);
-              Alert.alert('Error', 'Failed to delete booking');
+              console.error('Error deleting item from watchlist:', err);
+              Alert.alert('Error', 'Failed to delete item from watchlist');
             }
           },
         },
@@ -156,7 +122,7 @@ const ProfilePage = () => {
       const response = await axios.get(`https://theserver-tp6r.onrender.com/organisation/organisation/${organisationName}`);
       const rootUserName = response.data.RootUserName;
       console.log('Organisation details fetched', response.data);
-  
+
       // Get the channel name and user token from your backend
       console.log('Fetching Agora token...');
       const channelResponse = await axios.post('https://theserver-tp6r.onrender.com/get-agora-token', {
@@ -164,14 +130,14 @@ const ProfilePage = () => {
       });
       const { channel, token } = channelResponse.data;
       console.log('Agora token fetched', channelResponse.data);
-  
+
       setChannelName(channel);
       setUserToken(token);
       setIsVideoCallVisible(true);
-  
+
       const engine = agoraEngineRef.current;
       console.log('Checking Agora engine:', engine);
-  
+
       if (engine) {
         if (!engine.isInitialized) {
           console.log('Initializing Agora engine...');
@@ -179,7 +145,7 @@ const ProfilePage = () => {
           console.log('Video enabled');
           engine.isInitialized = true;
         }
-  
+
         console.log('Joining channel...');
         await engine.joinChannel(token, channel, null, 0).catch((err) => {
           console.error('Error joining Agora channel:', err);
@@ -195,6 +161,7 @@ const ProfilePage = () => {
       Alert.alert('Error', 'Failed to fetch organisation details');
     }
   };
+
   const handleEndCall = async () => {
     const engine = agoraEngineRef.current;
     if (engine) {
@@ -202,6 +169,7 @@ const ProfilePage = () => {
     }
     setIsVideoCallVisible(false);
   };
+
   if (loading) return <ActivityIndicator size="large" color="#FF5733" />;
   if (error) return <Text style={styles.error}>{error}</Text>;
 
@@ -209,166 +177,172 @@ const ProfilePage = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.username}>Welcome: {username}</Text>
 
-      <Text style={styles.sectionTitle}>Booking History:</Text>
-      {bookings.length > 0 ? (
-        bookings.map((booking, index) => (
-          <View key={index} style={styles.booking}>
-            <Text style={styles.bookingText}>Property: {booking.propertyName}</Text>
-            <Text style={styles.bookingText}>Date: {new Date(booking.date).toDateString()}</Text>
-            <Text style={styles.bookingText}>Time: {booking.time}</Text>
-            <Text style={styles.bookingText}>Status: {booking.status}</Text>
-            {booking.status === 'confirmed' && (
-              <Text style={styles.bookingText}>Room ID: {booking.RoomId}</Text>
+      <Text style={styles.sectionTitle}>Your Watchlist:</Text>
+      {watchlist.length > 0 ? (
+        watchlist.map((item, index) => (
+          <View key={index} style={styles.item}>
+            <Text style={styles.itemText}>Property: {item.propertyName}</Text>
+            <Text style={styles.itemText}>Date: {new Date(item.date).toDateString()}</Text>
+            <Text style={styles.itemText}>Time: {item.time}</Text>
+            <Text style={styles.itemText}>Status: {item.status}</Text>
+            {item.status === 'confirmed' && (
+              <Text style={styles.itemText}>Room ID: {item.RoomId}</Text>
             )}
+            <View style={styles.imageContainer}>
+              {item.imageURL ? (
+                <>
+                  <Image
+                    source={{ uri: item.imageURL }}
+                    style={styles.image}
+                    onLoadStart={() => setImageLoading(true)}
+                    onLoadEnd={() => setImageLoading(false)}
+                    onError={() => setImageLoading(true)}
+                  />
+                  {imageLoading && <ActivityIndicator size="small" color="#FF5733" />}
+                </>
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: PLACEHOLDER_IMAGE }}
+                    style={styles.image}
+                  />
+                  <ActivityIndicator size="small" color="#FF5733" />
+                </>
+              )}
+            </View>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button} onPress={() => handleEdit(booking)}>
-                <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDelete(booking)}>
+              <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDelete(item)}>
                 <Text style={styles.buttonText}>Delete</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.videoCallButton]} onPress={() => handleVideoCall(booking.organisationName)}>
+              <TouchableOpacity style={[styles.button, styles.callButton]} onPress={() => handleVideoCall(item.propertyName)}>
                 <Text style={styles.buttonText}>Video Call</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))
       ) : (
-        <Text style={styles.noBookings}>No bookings found</Text>
+        <Text style={styles.noItemsText}>No items in your watchlist</Text>
       )}
 
-      <Modal isVisible={isModalVisible} onBackdropPress={() => setIsModalVisible(false)}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Edit Booking</Text>
-          <DatePicker
-            date={newDate || new Date()}
-            onDateChange={setNewDate}
-          />
-          <Picker
-            selectedValue={newTime}
-            onValueChange={(itemValue) => setNewTime(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select Time" value="" />
-            {[...Array(24).keys()].map((hour) => (
-              <Picker.Item key={hour} label={`${hour}:00`} value={`${hour}:00`} />
-            ))}
-          </Picker>
-          <View style={styles.modalButtonContainer}>
-            <TouchableOpacity style={styles.button} onPress={handleSave}>
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+      <Modal isVisible={isVideoCallVisible} onBackdropPress={handleEndCall}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Video Call</Text>
+          <Text style={styles.modalText}>Channel: {channelName}</Text>
+          <View style={styles.videoCallContainer}>
+            {/* Agora Video Call Component */}
           </View>
-          {bookingMessage ? <Text style={styles.bookingMessage}>{bookingMessage}</Text> : null}
+          <TouchableOpacity style={styles.modalButton} onPress={handleEndCall}>
+            <Text style={styles.modalButtonText}>End Call</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </ScrollView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
-    marginTop: 30,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F5',
+    flexGrow: 1,
   },
   username: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FF5733',
-    marginBottom: 15,
+    marginBottom: 10,
   },
-  booking: {
-    padding: 20,
-    marginBottom: 15,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
+  item: {
+    backgroundColor: '#FFF',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  bookingText: {
+  itemText: {
     fontSize: 16,
     color: '#333',
     marginBottom: 5,
   },
-  noBookings: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginVertical: 50,
-    color: '#FF5733',
+  noItemsText: {
+    fontSize: 16,
+    color: '#999',
+  },
+  imageContainer: {
+    marginBottom: 10,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    resizeMode: 'cover',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 15,
   },
   button: {
-    backgroundColor: '#FF5733',
     padding: 10,
-    borderRadius: 10,
-    width: '30%',
-    alignItems: 'center',
+    borderRadius: 5,
   },
   deleteButton: {
-    backgroundColor: '#ff3333',
+    backgroundColor: '#FF5733',
   },
-  videoCallButton: {
-    backgroundColor: '#33cc33',
+  callButton: {
+    backgroundColor: '#28A745',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 15,
-  },
-  modalTitle: {
-    fontSize: 18,
+    color: '#FFF',
     fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: '#aaa',
-  },
-  picker: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  bookingMessage: {
-    color: 'green',
-    marginTop: 15,
+    textAlign: 'center',
   },
   error: {
-    fontSize: 18,
     color: 'red',
     textAlign: 'center',
     marginTop: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FF5733',
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
+  videoCallContainer: {
+    width: '100%',
+    height: 300,
+    backgroundColor: '#000',
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: '#FF5733',
+    padding: 10,
+    borderRadius: 5,
+  },
+  modalButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

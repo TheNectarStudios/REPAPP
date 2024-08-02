@@ -55,7 +55,7 @@ const Navbar = ({ username, userRole }) => {
         ]);
       } catch (e) {
         console.error('Failed to save data:', e);
-        Alert.alert('Error', 'Failed to save data.');
+        //Alert.//Alert('Error', 'Failed to save data.');
       }
     }
 

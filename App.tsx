@@ -28,15 +28,15 @@ const App = () => {
 
       if (response.status === 200) {
         setScreen('verifyOTP'); // Move to OTP verification screen
-        Alert.alert('Registration successful', 'Please verify your phone number using OTP sent to your phone number');
+        // Alert.alert('Registration successful', 'Please verify your phone number using OTP sent to your phone number');
       } else {
         const errorText = await response.text();
         console.log('Registration failed with response:', response.status, errorText);
-        Alert.alert('Registration failed', `Error: ${errorText}`);
+        // Alert.alert('Registration failed', `Error: ${errorText}`);
       }
     } catch (error) {
       console.error('Error during registration:', error);
-      Alert.alert('Registration failed', 'An error occurred during registration');
+      // Alert.alert('Registration failed', 'An error occurred during registration');
     }
   };
 
@@ -57,7 +57,7 @@ const App = () => {
       const data = await response.json();
       setRole(data.userRole);
     } catch (error) {
-      Alert.alert('Fetch failed', 'An error occurred while fetching the user role');
+      // Alert.alert('Fetch failed', 'An error occurred while fetching the user role');
     }
   };
 
@@ -91,12 +91,12 @@ const App = () => {
       await AsyncStorage.setItem('username', username);
 
       setScreen('home');
-      Alert.alert('Login successful', 'Welcome!');
+      //Alert.//Alert('Login successful', 'Welcome!');
 
       handleGettingRole();
     } catch (error) {
       console.error('Error during login:', error);
-      Alert.alert('Login failed', 'An error occurred during login');
+      //Alert.//Alert('Login failed', 'An error occurred during login');
     }
   };
 
@@ -112,18 +112,18 @@ const App = () => {
       console.log(verificationCode);
 
       if (response.status === 200) {
-        Alert.alert('OTP verified', 'Phone number verified successfully');
+        //Alert.//Alert('OTP verified', 'Phone number verified successfully');
 
         // Save phone number to AsyncStorage if needed
         await AsyncStorage.setItem('phoneNumber', phoneNumber);
 
         setScreen('home'); // Move to home screen after OTP verification
       } else {
-        Alert.alert('OTP verification failed', 'Invalid OTP entered');
+        //Alert.//Alert('OTP verification failed', 'Invalid OTP entered');
       }
     } catch (error) {
       console.error('Error during OTP verification:', error);
-      Alert.alert('OTP verification failed', 'An error occurred during OTP verification');
+      //Alert.//Alert('OTP verification failed', 'An error occurred during OTP verification');
     }
   };
 

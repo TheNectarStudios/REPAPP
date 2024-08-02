@@ -239,7 +239,7 @@ const SlotsApproval = () => {
 
     const fetchBookings = async () => {
       try {
-        const response = await fetch(`http://192.168.174.72:3000/slots/bookings/organisation/${organizationName}`);
+        const response = await fetch(`http://theserver-tp6r.onrender.com/slots/bookings/organisation/${organizationName}`);
 
         if (response.status === 200) {
           const data = await response.json();
@@ -260,7 +260,7 @@ const SlotsApproval = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const response = await fetch(`http://192.168.174.72:3000/slots/booking/${id}/status`, {
+      const response = await fetch(`http://theserver-tp6r.onrender.com/slots/booking/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -33,40 +33,35 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
     setSelectedDate(date);
   };
 
+  const saveToWatchlist = async (bookingDetails) => {
+    try {
+      const watchlist = await AsyncStorage.getItem('watchlist');
+      const watchlistArray = watchlist ? JSON.parse(watchlist) : [];
+      watchlistArray.push(bookingDetails);
+      await AsyncStorage.setItem('watchlist', JSON.stringify(watchlistArray));
+      setBookingMessage('Booking saved to watchlist successfully!');
+    } catch (error) {
+      console.error('Error saving to watchlist:', error);
+      setBookingMessage('Error saving to watchlist: ' + error.message);
+    }
+  };
+
   const handleBooking = async () => {
     if (!selectedDate || !selectedTime) {
       setBookingMessage('Please select a date and time');
       return;
     }
 
-    try {
-      const response = await fetch('https://theserver-tp6r.onrender.com/slots/booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          propertyName: property.ChildPropertyName,
-          parentPropertyName: property.ParentPropertyName,
-          date: selectedDate.toISOString().split('T')[0], // Just the date part
-          time: selectedTime,
-          username,
-          organisationName: property.OrganisationName,
-        }),
-      });
+    const bookingDetails = {
+      propertyName: property.ChildPropertyName,
+      parentPropertyName: property.ParentPropertyName,
+      date: selectedDate.toISOString().split('T')[0], // Just the date part
+      time: selectedTime,
+      username,
+      organisationName: property.OrganisationName,
+    };
 
-      const data = await response.json();
-      console.log('Booking API response:', data);
-
-      if (response.ok) {
-        setBookingMessage('Booking confirmed');
-      } else {
-        setBookingMessage(data.message || 'Failed to book property');
-      }
-    } catch (error) {
-      console.error('Error booking property:', error);
-      setBookingMessage('Error booking property: ' + error.message);
-    }
+    saveToWatchlist(bookingDetails);
   };
 
   const handleStartMeeting = () => {

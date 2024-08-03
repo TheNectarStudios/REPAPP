@@ -1,14 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Modal from 'react-native-modal';
 import DatePicker from './DatePicker';
 import { Picker } from '@react-native-picker/picker';
-import RtcEngine from 'react-native-agora';
 import axios from 'axios';
 
-const AGORA_APP_ID = '159d9ac65d1949e4a159d0bb2351e9ef'; // Replace with your Agora App ID
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/100'; // Placeholder image URL
+// Placeholder image URL
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/150';
+
+const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
+  try {
+    // Construct the URL based on the provided format
+    const imageUrl = `https://ignitens.s3.eu-north-1.amazonaws.com/${organisationName}/${parentPropertyName}/${childPropertyName}/images/thumbnail/thumbnail.jpg`;
+    return imageUrl;
+  } catch (error) {
+    console.error('Error fetching image from S3:', error);
+    return PLACEHOLDER_IMAGE; // Use placeholder if there is an error
+  }
+};
 
 const ProfilePage = () => {
   const [username, setUsername] = useState('');
@@ -19,11 +29,6 @@ const ProfilePage = () => {
   const [currentItem, setCurrentItem] = useState(null);
   const [newDate, setNewDate] = useState(null);
   const [newTime, setNewTime] = useState('');
-  const [isVideoCallVisible, setIsVideoCallVisible] = useState(false);
-  const [channelName, setChannelName] = useState('');
-  const [userToken, setUserToken] = useState('');
-  const agoraEngineRef = useRef(null);
-  const [imageLoading, setImageLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -33,11 +38,11 @@ const ProfilePage = () => {
           setUsername(storedUsername);
         } else {
           setError('No username found in storage');
-          setLoading(false);
         }
       } catch (err) {
         console.error('Error fetching username from AsyncStorage:', err);
         setError('Failed to fetch username from storage');
+      } finally {
         setLoading(false);
       }
     };
@@ -50,7 +55,14 @@ const ProfilePage = () => {
       try {
         const storedWatchlist = await AsyncStorage.getItem('watchlist');
         if (storedWatchlist) {
-          setWatchlist(JSON.parse(storedWatchlist));
+          const watchlistItems = JSON.parse(storedWatchlist);
+          const watchlistWithImages = await Promise.all(
+            watchlistItems.map(async (item) => {
+              const imageUrl = await fetchImageFromS3(item.organisationName, item.parentPropertyName, item.propertyName);
+              return { ...item, imageURL: imageUrl };
+            })
+          );
+          setWatchlist(watchlistWithImages);
         } else {
           setError('No watchlist found in storage');
         }
@@ -65,29 +77,33 @@ const ProfilePage = () => {
     fetchWatchlist();
   }, []);
 
-  useEffect(() => {
-    const initAgoraEngine = async () => {
+  const handleEdit = (item) => {
+    setCurrentItem(item);
+    setNewDate(new Date(item.date));
+    setNewTime(item.time);
+    setIsModalVisible(true);
+  };
+
+  const handleSave = async () => {
+    if (currentItem && newDate) {
       try {
-        console.log('Initializing Agora engine...');
-        if (!agoraEngineRef.current) {
-          agoraEngineRef.current = await RtcEngine.create(AGORA_APP_ID);
-          console.log('Agora engine created');
-          await agoraEngineRef.current.enableVideo();
-          console.log('Video enabled');
-        }
+        const updatedItem = { ...currentItem, date: newDate.toISOString().split('T')[0], time: newTime };
+        const updatedWatchlist = watchlist.map((item) =>
+          item.id === currentItem.id ? updatedItem : item
+        );
+        await AsyncStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+        setWatchlist(updatedWatchlist);
+        setIsModalVisible(false);
       } catch (err) {
-        console.error('Error initializing Agora engine:', err);
+        console.error('Error updating watchlist:', err);
+        Alert.alert('Error', 'Failed to update watchlist');
       }
-    };
+    }
+  };
 
-    initAgoraEngine();
-
-    return () => {
-      if (agoraEngineRef.current) {
-        agoraEngineRef.current.destroy();
-      }
-    };
-  }, []);
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
 
   const handleDelete = (item) => {
     Alert.alert(
@@ -112,127 +128,76 @@ const ProfilePage = () => {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: false }
     );
   };
 
-  const handleVideoCall = async (organisationName) => {
+  const handleBookNow = async () => {
     try {
-      console.log('Fetching organisation details...');
-      const response = await axios.get(`https://theserver-tp6r.onrender.com/organisation/organisation/${organisationName}`);
-      const rootUserName = response.data.RootUserName;
-      console.log('Organisation details fetched', response.data);
-
-      // Get the channel name and user token from your backend
-      console.log('Fetching Agora token...');
-      const channelResponse = await axios.post('https://theserver-tp6r.onrender.com/get-agora-token', {
-        user: rootUserName,
+      const response = await axios.post('https://theserver-tp6r.onrender.com/slots/bookings', {
+        username,
+        watchlist,
       });
-      const { channel, token } = channelResponse.data;
-      console.log('Agora token fetched', channelResponse.data);
-
-      setChannelName(channel);
-      setUserToken(token);
-      setIsVideoCallVisible(true);
-
-      const engine = agoraEngineRef.current;
-      console.log('Checking Agora engine:', engine);
-
-      if (engine) {
-        if (!engine.isInitialized) {
-          console.log('Initializing Agora engine...');
-          await engine.enableVideo();
-          console.log('Video enabled');
-          engine.isInitialized = true;
-        }
-
-        console.log('Joining channel...');
-        await engine.joinChannel(token, channel, null, 0).catch((err) => {
-          console.error('Error joining Agora channel:', err);
-          Alert.alert('Error', 'Failed to join the video call');
-        });
-        console.log('Channel joined');
-      } else {
-        console.error('Agora engine is not initialized');
-        Alert.alert('Error', 'Agora engine is not initialized');
-      }
-    } catch (err) {
-      console.error('Error fetching organisation details:', err);
-      Alert.alert('Error', 'Failed to fetch organisation details');
+      Alert.alert('Success', 'Booking successful!');
+    } catch (error) {
+      console.error('Error booking:', error.response ? error.response.data : error.message);
+      Alert.alert('Error', 'Failed to book');
     }
   };
 
-  const handleEndCall = async () => {
-    const engine = agoraEngineRef.current;
-    if (engine) {
-      await engine.leaveChannel();
-    }
-    setIsVideoCallVisible(false);
-  };
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
-  if (loading) return <ActivityIndicator size="large" color="#FF5733" />;
-  if (error) return <Text style={styles.error}>{error}</Text>;
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.username}>Welcome: {username}</Text>
-
-      <Text style={styles.sectionTitle}>Your Watchlist:</Text>
-      {watchlist.length > 0 ? (
-        watchlist.map((item, index) => (
-          <View key={index} style={styles.item}>
-            <Text style={styles.itemText}>Property: {item.propertyName}</Text>
-            <Text style={styles.itemText}>Date: {new Date(item.date).toDateString()}</Text>
-            <Text style={styles.itemText}>Time: {item.time}</Text>
-            <Text style={styles.itemText}>Status: {item.status}</Text>
-            {item.status === 'confirmed' && (
-              <Text style={styles.itemText}>Room ID: {item.RoomId}</Text>
-            )}
-            <View style={styles.imageContainer}>
-              {item.imageURL ? (
-                <>
-                  <Image
-                    source={{ uri: item.imageURL }}
-                    style={styles.image}
-                    onLoadStart={() => setImageLoading(true)}
-                    onLoadEnd={() => setImageLoading(false)}
-                    onError={() => setImageLoading(true)}
-                  />
-                  {imageLoading && <ActivityIndicator size="small" color="#FF5733" />}
-                </>
-              ) : (
-                <>
-                  <Image
-                    source={{ uri: PLACEHOLDER_IMAGE }}
-                    style={styles.image}
-                  />
-                  <ActivityIndicator size="small" color="#FF5733" />
-                </>
-              )}
-            </View>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => handleDelete(item)}>
-                <Text style={styles.buttonText}>Delete</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.usernameText}>Username: {username}</Text>
+      {watchlist.map((item) => (
+        <View key={item.id || Math.random()} style={styles.card}>
+          <Image source={{ uri: item.imageURL }} style={styles.image} />
+          <View style={styles.cardContent}>
+            <Text style={styles.propertyName}>{item.propertyName}</Text>
+            <Text style={styles.dateTime}>{item.date} - {item.time}</Text>
+            <View style={styles.cardActions}>
+              <TouchableOpacity onPress={() => handleEdit(item)} style={styles.actionButton}>
+                <Text style={styles.editText}>Edit</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.callButton]} onPress={() => handleVideoCall(item.propertyName)}>
-                <Text style={styles.buttonText}>Video Call</Text>
+              <TouchableOpacity onPress={() => handleDelete(item)} style={styles.actionButton}>
+                <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
-        ))
-      ) : (
-        <Text style={styles.noItemsText}>No items in your watchlist</Text>
-      )}
-
-      <Modal isVisible={isVideoCallVisible} onBackdropPress={handleEndCall}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Video Call</Text>
-          <Text style={styles.modalText}>Channel: {channelName}</Text>
-          <View style={styles.videoCallContainer}>
-            {/* Agora Video Call Component */}
-          </View>
-          <TouchableOpacity style={styles.modalButton} onPress={handleEndCall}>
-            <Text style={styles.modalButtonText}>End Call</Text>
+        </View>
+      ))}
+      <TouchableOpacity onPress={handleBookNow} style={styles.bookNowButton}>
+        <Text style={styles.bookNowText}>Book Now</Text>
+      </TouchableOpacity>
+      <Modal isVisible={isModalVisible}>
+        <View style={styles.modalContent}>
+          <DatePicker date={newDate} onDateChange={setNewDate} />
+          <Picker selectedValue={newTime} onValueChange={(itemValue) => setNewTime(itemValue)}>
+            <Picker.Item label="10:00 AM" value="10:00 AM" />
+            <Picker.Item label="11:00 AM" value="11:00 AM" />
+            <Picker.Item label="12:00 PM" value="12:00 PM" />
+            {/* Add more time slots as needed */}
+          </Picker>
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleCancel} style={styles.cancelButton}>
+            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -242,106 +207,111 @@ const ProfilePage = () => {
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 32, 
+    flex: 1,
     padding: 20,
-    backgroundColor: '#F5F5F5',
-    flexGrow: 1,
+    backgroundColor: '#f5f5f5',
   },
-  username: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  sectionTitle: {
+  usernameText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF5733',
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  item: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  itemText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
-  },
-  noItemsText: {
-    fontSize: 16,
-    color: '#999',
-  },
-  imageContainer: {
-    marginBottom: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
   },
   image: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
-    resizeMode: 'cover',
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 16,
   },
-  buttonContainer: {
+  cardContent: {
+    flex: 1,
+  },
+  propertyName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  dateTime: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  cardActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  button: {
-    padding: 10,
-    borderRadius: 5,
+  actionButton: {
+    padding: 8,
   },
-  deleteButton: {
-    backgroundColor: '#FF5733',
+  editText: {
+    color: 'blue',
   },
-  callButton: {
-    backgroundColor: '#28A745',
-  },
-  buttonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  error: {
+  deleteText: {
     color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
   },
-  modalContainer: {
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 10,
+  bookNowButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 16,
+  },
+  bookNowText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FF5733',
-    marginBottom: 10,
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 10,
+  errorText: {
+    fontSize: 18,
+    color: 'red',
   },
-  videoCallContainer: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#000',
-    marginBottom: 10,
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 22,
+    borderRadius: 8,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
-  modalButton: {
-    backgroundColor: '#FF5733',
-    padding: 10,
-    borderRadius: 5,
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 8,
   },
-  modalButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+  saveText: {
+    fontSize: 18,
+    color: 'white',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f44336',
+    padding: 12,
+    borderRadius: 8,
+  },
+  cancelText: {
+    fontSize: 18,
+    color: 'white',
     textAlign: 'center',
   },
 });

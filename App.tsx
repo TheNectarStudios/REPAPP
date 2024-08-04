@@ -1,11 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import Navbar from './Components/Navbar';
-import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Custom Button Component
+const CustomButton = ({ title, onPress }) => {
+  return (
+    <TouchableOpacity style={styles.button} onPress={onPress}>
+      <Text style={styles.buttonText}>{title}</Text>
+    </TouchableOpacity>
+  );
+};
+
 const App = () => {
-  const [screen, setScreen] = useState('register'); // Possible values: 'register', 'login', 'verifyOTP', 'home'
+  const [screen, setScreen] = useState('login'); // Possible values: 'register', 'login', 'verifyOTP', 'home'
   const [username, setUsername] = useState('');
   const [role, setRole] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -28,15 +36,12 @@ const App = () => {
 
       if (response.status === 200) {
         setScreen('verifyOTP'); // Move to OTP verification screen
-        // Alert.alert('Registration successful', 'Please verify your phone number using OTP sent to your phone number');
       } else {
         const errorText = await response.text();
         console.log('Registration failed with response:', response.status, errorText);
-        // Alert.alert('Registration failed', `Error: ${errorText}`);
       }
     } catch (error) {
       console.error('Error during registration:', error);
-      // Alert.alert('Registration failed', 'An error occurred during registration');
     }
   };
 
@@ -57,7 +62,7 @@ const App = () => {
       const data = await response.json();
       setRole(data.userRole);
     } catch (error) {
-      // Alert.alert('Fetch failed', 'An error occurred while fetching the user role');
+      console.error('Error fetching user role:', error);
     }
   };
 
@@ -91,12 +96,9 @@ const App = () => {
       await AsyncStorage.setItem('username', username);
 
       setScreen('home');
-      //Alert.//Alert('Login successful', 'Welcome!');
-
       handleGettingRole();
     } catch (error) {
       console.error('Error during login:', error);
-      //Alert.//Alert('Login failed', 'An error occurred during login');
     }
   };
 
@@ -112,18 +114,13 @@ const App = () => {
       console.log(verificationCode);
 
       if (response.status === 200) {
-        //Alert.//Alert('OTP verified', 'Phone number verified successfully');
-
-        // Save phone number to AsyncStorage if needed
         await AsyncStorage.setItem('phoneNumber', phoneNumber);
-
         setScreen('home'); // Move to home screen after OTP verification
       } else {
-        //Alert.//Alert('OTP verification failed', 'Invalid OTP entered');
+        console.error('OTP verification failed');
       }
     } catch (error) {
       console.error('Error during OTP verification:', error);
-      //Alert.//Alert('OTP verification failed', 'An error occurred during OTP verification');
     }
   };
 
@@ -157,7 +154,7 @@ const App = () => {
               value={password}
               onChangeText={setPassword}
             />
-            <Button title="Register" onPress={handleRegister} />
+            <CustomButton title="Register" onPress={handleRegister} />
             <Text style={styles.toggleText} onPress={() => setScreen('login')}>
               Already have an account? Login
             </Text>
@@ -166,7 +163,7 @@ const App = () => {
       case 'login':
         return (
           <View style={styles.container}>
-            <Text style={styles.header}>Login {role} </Text>
+            <Text style={styles.header}>Login {role}</Text>
             <TextInput
               style={styles.input}
               placeholder="Username"
@@ -180,7 +177,7 @@ const App = () => {
               value={password}
               onChangeText={setPassword}
             />
-            <Button title="Login" onPress={handleLogin} />
+            <CustomButton title="Login" onPress={handleLogin} />
             <Text style={styles.toggleText} onPress={() => setScreen('register')}>
               Don't have an account? Register
             </Text>
@@ -198,7 +195,7 @@ const App = () => {
               onChangeText={setOTP}
               keyboardType="numeric"
             />
-            <Button title="Verify OTP" onPress={handleVerifyOTP} />
+            <CustomButton title="Verify OTP" onPress={handleVerifyOTP} />
           </View>
         );
       case 'home':
@@ -248,6 +245,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
+    borderRadius: 10, // Increased border radius for input fields
     marginBottom: 12,
     paddingHorizontal: 8,
   },
@@ -256,8 +254,17 @@ const styles = StyleSheet.create({
     color: 'blue',
     textAlign: 'center',
   },
+  button: {
+    backgroundColor: '#1E90FF',
+    padding: 10,
+    borderRadius: 10, // Increased border radius for the buttons
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+  },
 });
 
 export default App;
-
-

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import s3 from './../../awsConfig'; // Import the AWS configuration
-import DescriptionPage from './DescriptionPage'; // Import DescriptionPage
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import s3 from './../../awsConfig';
+import DescriptionPage from './DescriptionPage';
 
 const fetchImageFromS3 = async (organisationName, parentPropertyName, childPropertyName) => {
   if (!organisationName || !parentPropertyName || !childPropertyName) {
@@ -18,10 +17,10 @@ const fetchImageFromS3 = async (organisationName, parentPropertyName, childPrope
     const params = {
       Bucket: 'ignitens',
       Key: key,
-      Expires: 30, // URL expiration time in seconds
+      Expires: 30,
     };
     const imageUrl = await s3.getSignedUrlPromise('getObject', params);
-    console.log('Generated Image URL:', imageUrl); // Log the generated URL
+    console.log('Generated Image URL:', imageUrl);
     return imageUrl;
   } catch (error) {
     console.error('Error fetching image from S3:', error);
@@ -35,6 +34,7 @@ const HomeScreen = () => {
   const [filteredHouses, setFilteredHouses] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [cities, setCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState({});
 
   useEffect(() => {
     fetchHouses();
@@ -52,9 +52,8 @@ const HomeScreen = () => {
         return { ...property, imageUrl };
       }));
       setHouses(housesWithImages);
-      setFilteredHouses(housesWithImages); // Initialize filteredHouses with all houses
+      setFilteredHouses(housesWithImages);
 
-      // Extract unique cities from the houses data
       const uniqueCities = [...new Set(housesWithImages.map(house => house.Location))];
       setCities(uniqueCities);
     } catch (error) {
@@ -83,13 +82,38 @@ const HomeScreen = () => {
   };
 
   const renderItem = ({ item }) => {
+    const isLoading = loadingStates[item.ChildPropertyName] || false;
+
     return (
       <TouchableOpacity style={styles.card} onPress={() => handleReadMore(item)}>
-        <Image
-          source={{ uri: item.imageUrl }}
-          style={styles.image}
-          onError={(e) => console.error('Image loading error:', e.nativeEvent.error)}
-        />
+        <View style={styles.imageContainer}>
+          {isLoading && (
+            <ActivityIndicator style={styles.loadingIndicator} size="large" color="#007BFF" />
+          )}
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.image}
+            onLoadStart={() => {
+              setLoadingStates(prevState => ({
+                ...prevState,
+                [item.ChildPropertyName]: true,
+              }));
+            }}
+            onLoad={() => {
+              setLoadingStates(prevState => ({
+                ...prevState,
+                [item.ChildPropertyName]: false,
+              }));
+            }}
+            onError={(e) => {
+              console.error('Image loading error:', e.nativeEvent.error);
+              setLoadingStates(prevState => ({
+                ...prevState,
+                [item.ChildPropertyName]: false,
+              }));
+            }}
+          />
+        </View>
         <View style={styles.cardContent}>
           <Text style={styles.propertyName}>{item.ChildPropertyName}</Text>
           <Text style={styles.propertyPrice}>{item.Price}</Text>
@@ -118,7 +142,7 @@ const HomeScreen = () => {
       <View style={styles.header}>
         <Text style={styles.locationText}>{searchQuery}</Text>
         <TouchableOpacity style={styles.notificationIcon}>
-          <Text>Notification</Text>
+          <Text style={styles.notificationText}>🔔</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.searchContainer}>
@@ -145,42 +169,52 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
     paddingHorizontal: 10,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20, // Increased margin to avoid overlap
+    marginTop: 20,
     marginBottom: 20,
   },
   locationText: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
   },
   notificationIcon: {
-    // Add styles for notification icon if needed
+    padding: 10,
+  },
+  notificationText: {
+    fontSize: 24,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 5,
+    elevation: 2, // For Android
+    shadowColor: '#000', // For iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   searchInput: {
     flex: 1,
     height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    paddingLeft: 10,
+    fontSize: 16,
+    color: '#333',
   },
   searchButton: {
-    marginLeft: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
     backgroundColor: '#007BFF',
-    borderRadius: 5,
+    borderRadius: 10,
   },
   searchButtonText: {
     color: '#fff',
@@ -194,53 +228,66 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 10,
-    elevation: 3, // Android shadow
-    shadowColor: '#000', // iOS shadow
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
   },
-  image: {
+  imageContainer: {
+    position: 'relative',
     width: '100%',
     height: 200,
   },
+  loadingIndicator: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -25,
+    marginLeft: -25,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
   cardContent: {
-    padding: 10,
+    padding: 15,
   },
   propertyName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
+    color: '#333',
   },
   propertyPrice: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 16,
     marginBottom: 5,
+    color: '#555',
   },
   propertyDetail: {
     fontSize: 14,
-    color: '#888',
+    marginBottom: 10,
+    color: '#777',
   },
   propertyStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginBottom: 10,
   },
   stat: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 14,
+    color: '#666',
   },
   readMoreButton: {
-    marginTop: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
     backgroundColor: '#007BFF',
+    paddingVertical: 10,
     borderRadius: 5,
   },
   readMoreText: {
     color: '#fff',
-    fontSize: 14,
     textAlign: 'center',
+    fontSize: 16,
   },
 });
 

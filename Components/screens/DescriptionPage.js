@@ -131,9 +131,6 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
           </TouchableOpacity>
 
           {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => setSelectedProperty(null)}>
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
         </>
       )}
     </ScrollView>

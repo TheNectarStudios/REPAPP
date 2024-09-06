@@ -24,13 +24,17 @@ const Navbar = ({ username, userRole }) => {
         setSidebarVisible(false);
         return true;
       }
-      return false;
+      if (currentScreen === 'Profile') {
+        setCurrentScreen('Home');
+        return true;
+      }
+      return false; // This will exit the app if no other condition is met
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
 
     return () => backHandler.remove();
-  }, [isSidebarVisible]);
+  }, [isSidebarVisible, currentScreen]);
 
   const toggleSidebar = () => {
     setSidebarVisible(!isSidebarVisible);
@@ -55,7 +59,7 @@ const Navbar = ({ username, userRole }) => {
         ]);
       } catch (e) {
         console.error('Failed to save data:', e);
-        //Alert.//Alert('Error', 'Failed to save data.');
+        //Alert('Error', 'Failed to save data.');
       }
     }
 
@@ -73,18 +77,6 @@ const Navbar = ({ username, userRole }) => {
           case 'Nearby':
             return <NearbyScreen />;
           // Uncomment and add other screens as needed
-          // case 'Bookmark':
-          //   return <BookmarkScreen />;
-          // case 'Notification':
-          //   return <NotificationScreen />;
-          // case 'Message':
-          //   return <MessageScreen />;
-          // case 'Setting':
-          //   return <SettingScreen />;
-          // case 'Help':
-          //   return <HelpScreen />;
-          // case 'Logout':
-          //   return <LogoutScreen />;
           default:
             return <HomeScreen />;
         }
@@ -115,13 +107,7 @@ const Navbar = ({ username, userRole }) => {
           <View style={styles.sidebar}>
             <Text style={styles.sidebarItem} onPress={() => navigateTo('Home')}>Home</Text>
             <Text style={styles.sidebarItem} onPress={() => navigateTo('Profile')}>Profile</Text>
-            {/* <Text style={styles.sidebarItem} onPress={() => navigateTo('Nearby')}>Nearby</Text> */}
-            {/* <Text style={styles.sidebarItem} onPress={() => navigateTo('Bookmark')}>Bookmark</Text>
-            <Text style={styles.sidebarItem} onPress={() => navigateTo('Notification')}>Notification</Text>
-            <Text style={styles.sidebarItem} onPress={() => navigateTo('Message')}>Message</Text>
-            <Text style={styles.sidebarItem} onPress={() => navigateTo('Setting')}>Setting</Text>
-            <Text style={styles.sidebarItem} onPress={() => navigateTo('Help')}>Help</Text>
-            <Text style={styles.sidebarItem} onPress={() => navigateTo('Logout')}>Logout</Text> */}
+            {/* Add other sidebar items as needed */}
           </View>
         )}
 
@@ -143,12 +129,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: '#F5FCFF',
-  },
-  backButton: {
-    color: '#fff',
-    fontSize: 20,
-    fontFamily: 'Roboto',
-    marginBottom: 10,
   },
   sidebar: {
     position: 'absolute',

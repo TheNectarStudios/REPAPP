@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Button, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import s3 from './../../awsConfig'; // Import the AWS configuration
@@ -70,8 +70,12 @@ const CreatorScreen = ({ navigateTo }) => {
     fetchPropertyData();
   }, []);
 
+  const handleBackPress = () => {
+    setShowDescription(false);  // Hide the description
+  };
+
   if (showDescription) {
-    return <DescriptionCreator propertyName={selectedPropertyName} navigateBack={() => setShowDescription(false)} />;
+    return <DescriptionCreator propertyName={selectedPropertyName} navigateBack={handleBackPress} />;
   }
 
   return (
@@ -108,7 +112,6 @@ const CreatorScreen = ({ navigateTo }) => {
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

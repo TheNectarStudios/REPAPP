@@ -118,8 +118,13 @@ const ProfilePage = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const updatedWatchlist = watchlist.filter((w) => w.id !== item.id);
+              // Filter out the item to delete
+              const updatedWatchlist = watchlist.filter((w) => w.propertyName !== item.propertyName);
+              
+              // Update the watchlist in AsyncStorage
               await AsyncStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+              
+              // Update the state with the filtered list
               setWatchlist(updatedWatchlist);
             } catch (err) {
               console.error('Error deleting item from watchlist:', err);
@@ -131,6 +136,7 @@ const ProfilePage = () => {
       { cancelable: false }
     );
   };
+  
 
   const handleBookNow = async () => {
     try {

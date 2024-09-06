@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, BackHandler } from 'react-native';
 import DatePicker from './DatePicker';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -68,6 +68,20 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
     setShowMeeting(true);
   };
 
+  // Handle hardware back button press
+  useEffect(() => {
+    const onBackPress = () => {
+      setSelectedProperty(null); // Navigate back to HomeScreen or previous component
+      return true; // Prevent default back button behavior
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    };
+  }, []);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {showMeeting ? (
@@ -116,6 +130,7 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
             <Text style={styles.meetingButtonText}>Start Video Call</Text>
           </TouchableOpacity>
 
+          {/* Back button */}
           <TouchableOpacity style={styles.backButton} onPress={() => setSelectedProperty(null)}>
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>

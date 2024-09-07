@@ -12,6 +12,7 @@ buildscript {
         google()
         mavenCentral()
     }
+    
     dependencies {
         // Define dependencies for building Android
         classpath("com.android.tools.build:gradle:8.1.2")  // Specify Gradle plugin version for Android

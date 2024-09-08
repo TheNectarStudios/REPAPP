@@ -71,7 +71,8 @@ const Watchlist = () => {
   const updateSlotApproval = async (propertyName, parentPropertyName, status) => {
     try {
       const response = await fetch(`https://theserver-tp6r.onrender.com/slots/bookings/approve/${propertyName}/${parentPropertyName}`, {
-        method: 'PUT',
+        method: 'PUT',  
+        
         headers: {
           'Content-Type': 'application/json',
         },

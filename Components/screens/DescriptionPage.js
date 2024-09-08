@@ -59,6 +59,7 @@ const DescriptionPage = ({ property, setSelectedProperty }) => {
       time: selectedTime,
       username,
       organisationName: property.OrganisationName,
+      ApprovalStatus: 'Pending',
     };
 
     saveToWatchlist(bookingDetails);

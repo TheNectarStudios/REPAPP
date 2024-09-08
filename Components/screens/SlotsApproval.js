@@ -70,15 +70,15 @@ const Watchlist = () => {
 
   const updateSlotApproval = async (propertyName, parentPropertyName, status) => {
     try {
-      const response = await fetch(`https://theserver-tp6r.onrender.com/slots/bookings/approve/123123/${propertyName}/${parentPropertyName}`, {
+      const response = await fetch(`https://theserver-tp6r.onrender.com/slots/bookings/approve/${propertyName}/${parentPropertyName}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ approvalStatus: status }),
       });
-
-      if (response.status === 200) {
+  
+      if (response.ok) {
         // Update only the specific slot in the local state without reloading the entire list
         const updatedWatchlist = watchlist.map(slot => {
           if (slot.propertyName === propertyName && slot.parentPropertyName === parentPropertyName) {
@@ -87,6 +87,7 @@ const Watchlist = () => {
           return slot;
         });
         setWatchlist(updatedWatchlist);
+  
         // Display a small message for feedback
         Alert.alert('Success', `Slot ${status} successfully!`);
       } else {
@@ -97,6 +98,7 @@ const Watchlist = () => {
       Alert.alert('Error', `Failed to update approval status: ${error.message}`);
     }
   };
+  
 
   const renderItem = ({ item }) => (
     <View style={styles.slotContainer}>
